@@ -63,16 +63,15 @@ function Hero() {
         </p>
 
         <h1 className="font-display-xl mt-5 text-[clamp(2.75rem,7vw,5.5rem)] text-ink">
-          Bright prints,{" "}
-          <span className="text-gradient-sun">pressed easy</span>,{" "}
-          shipped fast.
+          Brighter prints at a{" "}
+          <span className="text-gradient-sun">brighter price</span>.
         </h1>
 
         <p className="mt-6 max-w-2xl text-lg text-ink/70 sm:text-xl">
-          Hot-peel DTF gang sheets priced by the square foot — no minimums, no
-          guesswork. Upload your art or build a sheet in the browser and we'll
-          print it bright the same business day.
+          Hot-peel DTF gang sheets priced by the square foot — the bigger the
+          sheet, the lower the rate. 3 ft minimum, shipped fast.
         </p>
+
 
         <div className="mt-9 flex flex-wrap items-center gap-3">
           <GradientButton to="/build" size="lg">
@@ -128,9 +127,10 @@ function HowItWorks() {
     },
     {
       n: "03",
-      title: "Ships the same day",
-      body: "Most orders go out the same business day with free shipping over $75.",
+      title: "Printed & shipped fast",
+      body: "We print, QC, and hand off to the carrier quickly. Free shipping over $75.",
     },
+
   ];
   return (
     <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
@@ -158,10 +158,11 @@ function HowItWorks() {
 
 function PricingTeaser() {
   const tiers = [
-    { size: "1 ft", price: "$9.99", perSqFt: "$5.45 / sq ft" },
-    { size: "3 ft", price: "$19.99", perSqFt: "$3.63 / sq ft", featured: true },
-    { size: "5 ft", price: "$29.99", perSqFt: "$3.27 / sq ft" },
+    { size: "3 ft", price: "$19.99", perSqFt: "$3.63 / sq ft" },
+    { size: "10 ft", price: "$54.99", perSqFt: "$3.00 / sq ft", featured: true },
+    { size: "30 ft", price: "$139.99", perSqFt: "$2.55 / sq ft" },
   ];
+
   return (
     <section className="bg-dawn/40 border-y border-line">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
@@ -190,7 +191,7 @@ function PricingTeaser() {
               }
             >
               <div className="font-mono text-xs uppercase tracking-[0.18em] text-stone">
-                {t.featured ? "Most popular" : "Length"}
+                {t.featured ? "Best value" : "Length"}
               </div>
               <div className="mt-2 font-display text-3xl font-extrabold text-ink">{t.size}</div>
               <div className="mt-4 font-mono text-2xl font-bold text-ink">{t.price}</div>
@@ -212,8 +213,9 @@ function ClosingCTA() {
           Ready to see your art on a shirt this week?
         </h2>
         <p className="mt-4 max-w-xl text-lg text-ink/70">
-          Upload a PNG, pick a size, and we'll have it printed and on its way — usually same day.
+          Upload a PNG, pick a size, and we'll get it printed and on its way.
         </p>
+
         <div className="mt-8">
           <GradientButton to="/upload" size="lg">
             Start your order →
