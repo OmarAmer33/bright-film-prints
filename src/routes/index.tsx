@@ -158,10 +158,11 @@ function HowItWorks() {
 
 function PricingTeaser() {
   const tiers = [
-    { size: "1 ft", price: "$9.99", perSqFt: "$5.45 / sq ft" },
-    { size: "3 ft", price: "$19.99", perSqFt: "$3.63 / sq ft", featured: true },
-    { size: "5 ft", price: "$29.99", perSqFt: "$3.27 / sq ft" },
+    { size: "3 ft", price: "$19.99", perSqFt: "$3.63 / sq ft" },
+    { size: "10 ft", price: "$54.99", perSqFt: "$3.00 / sq ft", featured: true },
+    { size: "30 ft", price: "$139.99", perSqFt: "$2.55 / sq ft" },
   ];
+
   return (
     <section className="bg-dawn/40 border-y border-line">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
