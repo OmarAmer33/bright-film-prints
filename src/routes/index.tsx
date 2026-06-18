@@ -127,9 +127,10 @@ function HowItWorks() {
     },
     {
       n: "03",
-      title: "Ships the same day",
-      body: "Most orders go out the same business day with free shipping over $75.",
+      title: "Printed & shipped fast",
+      body: "We print, QC, and hand off to the carrier quickly. Free shipping over $75.",
     },
+
   ];
   return (
     <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
