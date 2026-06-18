@@ -63,16 +63,15 @@ function Hero() {
         </p>
 
         <h1 className="font-display-xl mt-5 text-[clamp(2.75rem,7vw,5.5rem)] text-ink">
-          Bright prints,{" "}
-          <span className="text-gradient-sun">pressed easy</span>,{" "}
-          shipped fast.
+          Brighter prints at a{" "}
+          <span className="text-gradient-sun">brighter price</span>.
         </h1>
 
         <p className="mt-6 max-w-2xl text-lg text-ink/70 sm:text-xl">
-          Hot-peel DTF gang sheets priced by the square foot — no minimums, no
-          guesswork. Upload your art or build a sheet in the browser and we'll
-          print it bright the same business day.
+          Hot-peel DTF gang sheets priced by the square foot — the bigger the
+          sheet, the lower the rate. 3 ft minimum, shipped fast.
         </p>
+
 
         <div className="mt-9 flex flex-wrap items-center gap-3">
           <GradientButton to="/build" size="lg">
