@@ -15,18 +15,18 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-line/70 bg-paper/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-2 group" aria-label="Bright Transfers — home">
-          {/*
-            Logo slot. Swap this wordmark for <img src={logoAsset.url} className="h-10 w-auto" />
-            once Bright_Transfers_logo_v1_restored.png is uploaded via lovable-assets.
-          */}
-          <span aria-hidden className="grid h-9 w-9 place-items-center rounded-soft bg-gradient-sun text-ink font-display font-extrabold shadow-warm">
-            B
-          </span>
+        <Link to="/" className="flex items-center gap-2.5 group" aria-label="Bright Transfers — home">
+          <img
+            src={logoAsset.url}
+            alt=""
+            aria-hidden
+            className="h-10 w-10 object-contain"
+          />
           <span className="font-display text-lg font-extrabold tracking-tight text-ink">
-            Bright<span className="text-gradient-sun">Transfers</span>
+            Bright Transfers
           </span>
         </Link>
+
 
         <nav aria-label="Primary" className="hidden items-center gap-7 md:flex">
           {nav.map((item) => (
