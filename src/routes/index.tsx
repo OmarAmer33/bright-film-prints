@@ -191,7 +191,7 @@ function PricingTeaser() {
               }
             >
               <div className="font-mono text-xs uppercase tracking-[0.18em] text-stone">
-                {t.featured ? "Most popular" : "Length"}
+                {t.featured ? "Best value" : "Length"}
               </div>
               <div className="mt-2 font-display text-3xl font-extrabold text-ink">{t.size}</div>
               <div className="mt-4 font-mono text-2xl font-bold text-ink">{t.price}</div>
