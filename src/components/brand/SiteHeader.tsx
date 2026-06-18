@@ -1,4 +1,7 @@
 import { Link } from "@tanstack/react-router";
+import logoAsset from "@/assets/bright-transfers-logo.png.asset.json";
+
+
 
 const nav = [
   { to: "/how-it-works", label: "How it works" },
