@@ -213,8 +213,9 @@ function ClosingCTA() {
           Ready to see your art on a shirt this week?
         </h2>
         <p className="mt-4 max-w-xl text-lg text-ink/70">
-          Upload a PNG, pick a size, and we'll have it printed and on its way — usually same day.
+          Upload a PNG, pick a size, and we'll get it printed and on its way.
         </p>
+
         <div className="mt-8">
           <GradientButton to="/upload" size="lg">
             Start your order →
