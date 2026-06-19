@@ -64,7 +64,7 @@ function Hero() {
 
         <h1 className="font-display-xl mt-5 text-[clamp(2.75rem,7vw,5.5rem)] text-ink">
           Brighter prints at a{" "}
-          <span className="text-gradient-sun">brighter price</span>.
+          <span className="text-gradient-accent">brighter price.</span>
         </h1>
 
         <p className="mt-6 max-w-2xl text-lg text-ink/70 sm:text-xl">
@@ -171,7 +171,7 @@ function PricingTeaser() {
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Pricing</p>
             <h2 className="mt-3 text-3xl text-ink sm:text-4xl">Pay by the square foot.</h2>
             <p className="mt-3 max-w-xl text-ink/70">
-              The more sheet you buy, the lower the per-square-foot rate. No hidden setup, no per-color fees.
+              The bigger the sheet, the lower the rate. No hidden setup, no per-color fees.
             </p>
           </div>
           <GradientButton to="/pricing" variant="outline">
@@ -179,23 +179,31 @@ function PricingTeaser() {
           </GradientButton>
         </div>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-3 md:gap-5">
           {tiers.map((t) => (
             <div
               key={t.size}
               className={
-                "rounded-card border bg-paper p-6 " +
+                "rounded-card border bg-paper " +
+                "flex items-center justify-between gap-3 px-5 py-4 " +
+                "md:flex-col md:items-stretch md:justify-start md:gap-0 md:p-6 " +
                 (t.featured
                   ? "border-ember/40 shadow-glow ring-1 ring-ember/20"
                   : "border-line shadow-warm/30")
               }
             >
-              <div className="font-mono text-xs uppercase tracking-[0.18em] text-stone">
-                {t.featured ? "Best value" : "Length"}
+              <div className="flex items-center gap-2 md:block">
+                <div className="font-display text-2xl font-extrabold text-ink md:text-3xl md:order-2 md:mt-2">
+                  {t.size}
+                </div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone md:order-1 md:text-xs">
+                  {t.featured ? "Best value" : "Length"}
+                </div>
               </div>
-              <div className="mt-2 font-display text-3xl font-extrabold text-ink">{t.size}</div>
-              <div className="mt-4 font-mono text-2xl font-bold text-ink">{t.price}</div>
-              <div className="mt-1 font-mono text-sm text-stone">{t.perSqFt}</div>
+              <div className="text-right md:text-left md:mt-4">
+                <div className="font-mono text-xl font-bold text-ink md:text-2xl">{t.price}</div>
+                <div className="font-mono text-xs text-stone md:mt-1 md:text-sm">{t.perSqFt}</div>
+              </div>
             </div>
           ))}
         </div>
@@ -210,7 +218,7 @@ function ClosingCTA() {
     <section className="bg-dawn">
       <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
         <h2 className="text-3xl text-ink sm:text-4xl md:text-5xl">
-          Ready to see your art on a shirt this week?
+          Ready to see your art on a shirt?
         </h2>
         <p className="mt-4 max-w-xl text-lg text-ink/70">
           Upload a PNG, pick a size, and we'll get it printed and on its way.

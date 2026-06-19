@@ -26,6 +26,7 @@
 
   /* Signature gradient — used sparingly */
   --gradient-sun: linear-gradient(135deg, var(--gold) 0%, var(--sun) 52%, var(--ember) 100%);
+  --gradient-text: linear-gradient(135deg, var(--sun) 0%, var(--ember) 100%);
 
   /* Radii */
   --radius: 0.75rem;        /* base */
@@ -148,6 +149,13 @@
 
 @utility text-gradient-sun {
   background-image: var(--gradient-sun);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility text-gradient-accent {
+  background-image: var(--gradient-text);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
