@@ -64,7 +64,7 @@ function Hero() {
 
         <h1 className="font-display-xl mt-5 text-[clamp(2.75rem,7vw,5.5rem)] text-ink">
           Brighter prints at a{" "}
-          <span className="text-gradient-sun">brighter price</span>.
+          <span className="text-gradient-accent">brighter price.</span>
         </h1>
 
         <p className="mt-6 max-w-2xl text-lg text-ink/70 sm:text-xl">
