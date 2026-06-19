@@ -171,7 +171,7 @@ function PricingTeaser() {
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Pricing</p>
             <h2 className="mt-3 text-3xl text-ink sm:text-4xl">Pay by the square foot.</h2>
             <p className="mt-3 max-w-xl text-ink/70">
-              The more sheet you buy, the lower the per-square-foot rate. No hidden setup, no per-color fees.
+              The bigger the sheet, the lower the rate. No hidden setup, no per-color fees.
             </p>
           </div>
           <GradientButton to="/pricing" variant="outline">
