@@ -26,6 +26,7 @@
 
   /* Signature gradient — used sparingly */
   --gradient-sun: linear-gradient(135deg, var(--gold) 0%, var(--sun) 52%, var(--ember) 100%);
+  --gradient-text: linear-gradient(135deg, var(--sun) 0%, var(--ember) 100%);
 
   /* Radii */
   --radius: 0.75rem;        /* base */

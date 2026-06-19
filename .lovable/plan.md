@@ -1,47 +1,48 @@
+Home page — round 2 visual + copy fixes (5 items). Scope: styling and copy only in `src/routes/index.tsx`, `src/components/brand/SiteFooter.tsx`, and `src/styles.css`. No token system, component API, backend, or header changes.
 
-# Plan: Home page copy fixes + logo (Claude round 2, approved)
+## 1. Pricing cards — fix dead space on mobile
 
-Logo received — sun-with-sunglasses sticker. I'll wire it in as the header mark.
+Current pricing cards stack vertically with tall proportions on mobile, leaving large empty areas.
 
-## 1. Hero — lead with price, drop "no minimums"
-- Eyebrow unchanged: `DTF Gang Sheets`.
-- Headline (gradient accent on one phrase):
-  > **Brighter prints at a <span class="gradient">brighter price</span>.**
-  Fallback if it reads ambiguous in the render: `Brighter prints, better price.`
-- Subhead (removes "no minimums" and "same business day"):
-  > Hot-peel DTF gang sheets priced by the square foot — the bigger the sheet, the lower the rate. 3 ft minimum, shipped fast.
+Change: on screens < 768px, render each pricing card as a single compact horizontal row:
+- Left: size + "Best value" badge (when featured)
+- Middle: price
+- Right: per-sq-ft
+Use `flex items-center justify-between` with minimal vertical padding, roughly one-third of current height. The "Best value" label on the 10 ft card must remain clearly visible — do not let the badge get squeezed out.
 
-## 2. Pricing teaser — locked-table rows + "Best value"
-| Size  | Price    | Per sq ft     | Badge |
-|-------|----------|---------------|-------|
-| 3 ft  | $19.99   | $3.63 / sq ft | `Length` |
-| 10 ft | $54.99   | $3.00 / sq ft | **`Best value`** (featured ring stays) |
-| 30 ft | $139.99  | $2.55 / sq ft | `Length` |
+On desktop (≥768px), keep the existing three-column card layout with taller proportions. Featured ring stays on the 10 ft card.
 
-## 3. Soften turnaround in three places
-- Hero subhead: covered above.
-- How-it-works step 03: title `Ships the same day` → `Printed & shipped fast`; body → "We print, QC, and hand off to the carrier quickly. Free shipping over $75."
-- Closing CTA subhead: drop "usually same day" → "Upload a PNG, pick a size, and we'll get it printed and on its way."
+## 2. Hero accent gradient — bias more orange
 
-`PriceTicker` (`3 ft · $19.99 · $3.63 / sq ft`) unchanged — factual.
+The gradient on "brighter price" starts in gold (#FFC02E), causing the first letters to wash out against the peach hero background.
 
-## 4. Logo wiring
-- Upload `/mnt/user-uploads/image.png` via `lovable-assets create --filename bright-transfers-logo.png` → write pointer to `src/assets/bright-transfers-logo.png.asset.json`.
-- In `SiteHeader.tsx`:
-  - Replace the gradient "B" badge with `<img src={logo.url} alt="Bright Transfers" className="h-10 w-10 object-contain" />`.
-  - Keep the "Bright Transfers" wordmark next to it (sun mark + wordmark lockup — eliminates the double-B). Drop the gradient span on `Transfers` so the wordmark reads as a single ink lockup beside the sun (the sun carries the color now).
-- Hi-res swap later is still a one-file change (replace the `.asset.json`).
+Change in `src/styles.css`:
+- Add a new `--gradient-text` variable: `linear-gradient(135deg, var(--sun) 0%, var(--ember) 100%)`
+- Add a `@utility text-gradient-accent` using that variable
+- In `src/routes/index.tsx`, change the hero span class from `text-gradient-sun` to `text-gradient-accent`
 
-## 5. Verify
-- Build green + preview health healthy.
-- Capture mobile (390×844) + desktop (1366×768) screenshots of `/` for Claude.
+Leave `--gradient-sun` untouched since it is used by the decorative orbs.
 
-## Out of scope
-Tokens, typography, component APIs, routes, pricing logic, SEO/JSON-LD.
+Important: the trailing period after "brighter price" must still inherit the gradient treatment. Wrap the span so the period is inside it.
 
-## Files touched
-- `src/assets/bright-transfers-logo.png.asset.json` (new)
-- `src/components/brand/SiteHeader.tsx`
-- `src/routes/index.tsx`
+## 3. Pricing subhead copy change
 
-Approve and I'll build.
+In `PricingTeaser()`:
+- Old: "The more sheet you buy, the lower the per-square-foot rate."
+- New: "The bigger the sheet, the lower the rate."
+
+## 4. Closing headline copy change
+
+In `ClosingCTA()`:
+- Old: "Ready to see your art on a shirt this week?"
+- New: "Ready to see your art on a shirt?"
+
+## 5. Footer wordmark — add space
+
+In `SiteFooter.tsx`, the wordmark currently renders as "BrightTransfers" because the text is split across elements with no space.
+
+Change to render "Bright Transfers" (with a space), keeping the gradient accent on "Transfers".
+
+## Verify
+- Build green.
+- Capture mobile (390×844) screenshots for Claude review.
