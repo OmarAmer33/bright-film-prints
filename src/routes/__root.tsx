@@ -83,6 +83,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Bright Transfers" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "Bright Transfers — DTF Gang Sheets, Printed Fast" },
+      { name: "twitter:title", content: "Bright Transfers — DTF Gang Sheets, Printed Fast" },
+      { property: "og:description", content: "Vivid, hot-peel DTF gang sheets priced by the square foot. Printed bright, shipped fast." },
+      { name: "twitter:description", content: "Vivid, hot-peel DTF gang sheets priced by the square foot. Printed bright, shipped fast." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8e999e7f-6098-4fb7-9da6-b8c1ef5335ff/id-preview-eb4ca068--e9e1cf9d-5f52-4372-869d-697167934b89.lovable.app-1781834301951.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8e999e7f-6098-4fb7-9da6-b8c1ef5335ff/id-preview-eb4ca068--e9e1cf9d-5f52-4372-869d-697167934b89.lovable.app-1781834301951.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
