@@ -1,157 +1,108 @@
+## Step 13.3 (revised) — Server fns, upload pipeline, gang-sheet auto-calculator
 
-# Step 13.2 — Backend & data model (revised)
+Builds the first revenue-config path. No Stripe, no loyalty, no admin, no live AI tools. "Sharpen this?" and upscale fee are stubs.
 
-Scope: enable Lovable Cloud, create the database schema, RLS, and seed data. No Home page UI changes. No client wiring.
+### A. Settings + storage prerequisites
 
-## 1. Enable Lovable Cloud
-Call `supabase--enable` to provision Postgres + Auth + Storage + server functions.
+1. Migration: insert `settings` rows `upscale_fee = 2.49`, `bg_removal_fee = 0`. All fees read from `settings` — never hardcoded.
+2. Create private Storage bucket `uploads` via storage tool. RLS on `storage.objects` restricts to service role only; clients never touch Storage directly — they post to a server route that streams via admin client.
+3. Verify anon SELECT policies exist on `pricing_config` (active only) and `settings` (safe keys) so home + calculator can read live pricing through the server publishable client during SSR. Add narrow policies if missing.
 
-## 2. Extensions
-```sql
-create extension if not exists citext;
-create extension if not exists pgcrypto;  -- gen_random_uuid()
+### B. Quote / pricing server module (authoritative)
+
+- `src/lib/pricing.server.ts` — pure, **no secrets, no env access** (safe to import client-side for live display):
+  - Constants `TIERS_IN = [36,60,84,120,180,240,360]`, `GAP = 0.125`, `USABLE_WIDTH = 21.875`.
+  - `computeSheet({ design_w, design_h, qty })` → `{ per_row, rows, length_in, breakdown: [{ size_ft, count }], over_width }`. Implements the spec formula exactly including auto-split over 360".
+  - `computeWholesalerSheet({ length_in })` → snap to tier.
+  - `priceBreakdown(breakdown, pricingRows)` — used server-side only.
+- `src/lib/pricing.functions.ts`:
+  - `getPricing` (public, server publishable client) → active `pricing_config` rows + relevant `settings`.
+  - `getQuote` (public). `inputValidator` accepts **only dimensions/qty** — no prices, no tier names, no per_sqft. `{ mode: 'diy'|'wholesaler', design_w?, design_h?, qty?, length_in? }`. Handler loads pricing fresh from DB and recomputes authoritative `{ breakdown, subtotal, per_piece, lines, over_width }`. Client never sends prices.
+
+### C. Upload pipeline
+
+- Server **route** `src/routes/api/uploads.upload.ts` (POST, multipart). `createServerFn` doesn't stream binary well; route uses `supabaseAdmin` loaded inside the handler.
+  - Accepts PNG/JPG/PDF ≤ 50MB. Validates mime + size.
+  - Streams to `supabaseAdmin.storage.from('uploads').upload('{uuid}.{ext}', ...)`.
+  - Pure-JS header parser for PNG (IHDR) and JPEG (SOF) to get pixel dims. **Fails gracefully**: any throw or unrecognized header → log + set `width_px/height_px = null`, skip DPI, still complete the upload. Never blocks a sale on a header parse miss.
+  - PDFs: accept, dims = null (DPI check is raster-only).
+  - Inserts `uploads` row (`customer_id = null` for guests, `status = 'pending'`).
+  - Returns `{ id, signed_url, width_px, height_px }` (signed URL ~24h).
+- `src/lib/uploads.functions.ts` → `getUploadSignedUrl(id)` re-mints.
+
+### D. Home page: live pricing read
+
+Replace hardcoded `tiers` in `src/routes/index.tsx > PricingTeaser` with loader-fed data:
+
+- Add route `loader` calling `getPricing()`, filter to [3, 10, 30], keep "Best value" on 10 ft. Render via `useLoaderData`. Zero visual change.
+- Add `errorComponent` + `notFoundComponent` to satisfy boundary rule. Error fallback uses static tiers so home never blanks.
+
+### E. Upload page — calculator + DPI + presets
+
+Rewrite `src/routes/upload.tsx` (drop `ComingSoon`):
+
+```text
+┌─────────────────────────────────────────────┐
+│ 1. Mode toggle: [DIY art] [Wholesaler sheet]│
+├─────────────────────────────────────────────┤
+│ 2. Drop zone (optional in DIY, required to  │
+│    add to cart) — PNG/JPG/PDF ≤50MB         │
+├─────────────────────────────────────────────┤
+│ 3a. DIY: width-only presets + custom        │
+│     [Left chest ~4"] [Youth ~8"]            │
+│     [Adult ~11"]    [Full back ~12"]        │
+│     [Custom]                                │
+│     All presets set TARGET WIDTH only;      │
+│     height = width × (art_h / art_w).       │
+│     Custom: enter width; height auto from   │
+│     uploaded ratio (lock toggle).           │
+│     Tag: "Placeholder widths — confirm w/Chai"│
+│ 3b. Wholesaler: length confirm input        │
+├─────────────────────────────────────────────┤
+│ 4. Quantity                                 │
+├─────────────────────────────────────────────┤
+│ 5. Live quote panel (sticky on desktop):    │
+│    - Sheet breakdown (e.g. 2× 30ft + 1× 5ft)│
+│    - Total $XX.XX                           │
+│    - ~$X.XX per piece                       │
+│    - DPI badge if raster (see thresholds)   │
+│    - Over-width error + "Rotate 90°?"       │
+├─────────────────────────────────────────────┤
+│ [Add to cart]                               │
+└─────────────────────────────────────────────┘
 ```
 
-## 3. Roles (admin for Chai)
+**DPI thresholds (Chai-confirm — flag in code + UI):**
 
-```sql
-create type public.app_role as enum ('admin','customer');
+- ≥ 300 → green "print-ready"
+- 150–299 → amber "should print well"
+- < 150 → amber-red **recommendation**, not a block: "May look soft on fabric — we recommend sharpening." Show "Sharpen this?" CTA → `/tools/upscale` stub. **Add to cart stays enabled.** Comment in code: thresholds soft pending Chai's machine-tested floor (DTF on fabric forgives more than paper; some shops accept ~120).
 
-create table public.user_roles (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  role public.app_role not null,
-  created_at timestamptz not null default now(),
-  unique (user_id, role)
-);
-grant select on public.user_roles to authenticated;
-grant all on public.user_roles to service_role;
-alter table public.user_roles enable row level security;
+Components:
 
-create policy "users read own roles" on public.user_roles
-  for select to authenticated using (user_id = auth.uid());
+- `src/components/upload/Calculator.tsx` — imports pure `computeSheet` from `pricing.server.ts` for live layout. Calls `getQuote` server fn to lock authoritative price before "Add to cart" — sends dims/qty only, never prices.
+- `src/components/upload/DropZone.tsx` — drag/drop, posts to `/api/uploads/upload`.
+- `src/components/upload/PresetPicker.tsx` — width-only presets, visible "confirm with Chai" tag.
+- Rotate-90° button swaps width/height when over-width.
 
-create or replace function public.has_role(_user_id uuid, _role public.app_role)
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.user_roles where user_id = _user_id and role = _role)
-$$;
-```
-Chai's `admin` row is inserted manually after she signs up — out of scope for this migration.
+Stub route `src/routes/tools.upscale.tsx` (uses `ComingSoon`, "lands in 13.7").
 
-## 4. Enums
-```sql
-create type public.order_status as enum
-  ('new','paid','in_production','printed','shipped','delivered','on_hold','issue');
-create type public.order_item_source as enum ('upload','builder');
-create type public.upload_status as enum ('pending','ok','low_res','rejected');
-create type public.rewards_entry_type as enum ('earn','redeem','adjust');
-create type public.builder_session_status as enum
-  ('created','in_progress','accepted','file_ready','abandoned');
-```
+### F. Cart (client-side only this step)
 
-## 5. Tables
+- `src/lib/cart-store.ts` — Zustand store persisted in `localStorage`. `addItem`, `items`, `removeItem`, `clear`, `subtotal`. Items: `{ source, size_ft, quantity, unit_price, line_total, upload_id?, preview_url? }`. Server `getQuote` is the source of truth for `unit_price` / `line_total`.
+- `src/routes/cart.tsx` — minimal list: items, qty, line totals, subtotal, **disabled** "Checkout coming in 13.4" button. Remove-item works.
 
-**pricing_config** — `id uuid pk`, `size_ft numeric`, `price numeric`, `per_sqft numeric`, `sort_order int`, `active bool default true`, `created_at`, `updated_at`.
+### G. Verification
 
-**settings** — `key text pk`, `value jsonb not null`, `updated_at`.
+1. `getQuote` cases:
+   - 4×10 × 12 → per_row=5, rows=3, length=30.5 → 3 ft / **$19.99** ✓
+   - 4×10 × 20 → rows=4, length=40.625 → 5 ft / **$30.99** ✓
+   - 4×10 × 200 → length≈405 → **1× 30ft + 1× 3ft**, prices summed.
+2. Send `getQuote` payload with extra `unit_price: 0.01` fields → response ignores them, returns DB-priced quote (validator strips unknown keys).
+3. Home tiles still render 3/$19.99, 10/$54.99, 30/$139.99 from DB.
+4. Upload 1200×1200 PNG → row in `uploads`, file in Storage. At 4" print width → 300 DPI green. At 12" → 100 DPI red-recommendation, "Add to cart" still enabled.
+5. Upload corrupt PNG → dims null, no DPI badge, upload still completes.
 
-**customers** — `id uuid pk`, `auth_user_id uuid unique references auth.users(id) on delete set null` (nullable = guest), `email citext not null`, `name text`, `rewards_balance numeric not null default 0`, `created_at`, `updated_at`. Indexes on `email`, `auth_user_id`.
+### Out of scope
 
-**orders** — `id uuid pk`, `customer_id uuid references customers(id)` (nullable), `email citext not null`, `status order_status default 'new'`, `subtotal/shipping_fee/tax/rush_fee/total numeric not null default 0`, `rewards_earned/rewards_redeemed numeric default 0`, `stripe_payment_intent_id text`, `shipping_address jsonb`, `carrier text`, `tracking_number text`, `is_rush bool default false`, `created_at`, `updated_at`.
-
-**order_items** — `id uuid pk`, `order_id uuid not null references orders(id) on delete cascade`, `source order_item_source not null`, `size_ft numeric not null`, `quantity int not null check (quantity > 0)`, `unit_price numeric not null`, `line_total numeric not null`, `print_file_url text`, `preview_url text`, `builder_project_ref text`, `dpi_ok bool`, `notes text`, `created_at`.
-
-**uploads** — `id uuid pk`, `order_item_id uuid references order_items(id) on delete set null`, `customer_id uuid references customers(id)` (pre-checkout ownership), `file_url text not null`, `width_px int`, `height_px int`, `detected_dpi numeric`, `status upload_status default 'pending'`, `created_at`.
-
-**rewards_ledger** — `id uuid pk`, `customer_id uuid not null references customers(id) on delete cascade`, `order_id uuid references orders(id) on delete set null`, `type rewards_entry_type not null`, `amount numeric not null`, `memo text`, `created_at`.
-
-**builder_sessions** — `id uuid pk`, `customer_id uuid references customers(id)`, `antigro_session_id text`, `jwt_ref text`, `status builder_session_status default 'created'`, `print_file_url text`, `dimensions jsonb`, `created_at`, `updated_at`.
-
-## 6. Grants + RLS
-
-Pattern: explicit grants in the same migration, then `enable row level security`, then policies.
-
-**pricing_config / settings — public read, admin write**
-```sql
-grant select on public.pricing_config to anon, authenticated;
-grant all on public.pricing_config to service_role;
-alter table public.pricing_config enable row level security;
-create policy "read active pricing" on public.pricing_config
-  for select to anon, authenticated using (active = true);
-create policy "admins manage pricing" on public.pricing_config
-  for all to authenticated
-  using (public.has_role(auth.uid(),'admin'))
-  with check (public.has_role(auth.uid(),'admin'));
-```
-Same shape for `settings` (full `select` to anon/authenticated, admin writes).
-
-**customers / orders / order_items / uploads / rewards_ledger / builder_sessions**
-- Grants: `select, insert, update, delete` to `authenticated`; `all` to `service_role`. No anon grants.
-- Owner policies scope to `auth.uid()`, e.g. for `customers`: `auth_user_id = auth.uid()`. For child tables (`orders`, `uploads`, `rewards_ledger`, `builder_sessions`): `exists (select 1 from customers c where c.id = <table>.customer_id and c.auth_user_id = auth.uid())`. `order_items` joins through `orders`.
-- Admin policy on each: `for all using (public.has_role(auth.uid(),'admin')) with check (...)`.
-- Guest flows (no auth user) are created/read by service-role server functions in 13.3+, never by `anon`.
-
-## 7. handle_new_user trigger (customer row on signup)
-
-Create the customers row + default `customer` role automatically so authenticated users have a record to scope RLS against.
-
-```sql
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  insert into public.customers (auth_user_id, email, name)
-  values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'full_name')
-  )
-  on conflict (auth_user_id) do nothing;
-
-  insert into public.user_roles (user_id, role)
-  values (new.id, 'customer')
-  on conflict (user_id, role) do nothing;
-  return new;
-end;
-$$;
-
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
-```
-
-## 8. updated_at triggers
-Generic trigger function applied to `customers`, `orders`, `pricing_config`, `settings`, `builder_sessions`.
-
-## 9. Rewards discipline (noted, not implemented here)
-When the rewards server function lands later, `rewards_ledger` is the single source of truth. `customers.rewards_balance` is a derived cache written only by that function (sum of ledger entries). No other path mutates the balance.
-
-## 10. Seed data
-
-`pricing_config` (active, sort ascending):
-
-| size_ft | price  | per_sqft | sort_order |
-|--------:|-------:|---------:|-----------:|
-| 3       | 19.99  | 3.63     | 10 |
-| 5       | 30.99  | 3.38     | 20 |
-| 7       | 40.99  | 3.19     | 30 |
-| 10      | 54.99  | 3.00     | 40 |
-| 15      | 76.99  | 2.80     | 50 |
-| 20      | 97.99  | 2.67     | 60 |
-| 30      | 139.99 | 2.55     | 70 |
-
-`settings` (jsonb numerics):
-- `free_ship_threshold` → `75`
-- `standard_ship_fee` → `6.99`
-- `rush_fee` → `19.99`
-- `rewards_rate` → `0.10`
-
-## 11. Out of scope
-- No Home page wiring.
-- No server functions, upload pipeline, Stripe, or Antigro yet (13.3+).
-- Chai's admin row inserted manually after her signup.
-
-## Verify
-- `select * from public.pricing_config order by sort_order` → 7 rows at locked prices.
-- `select * from public.settings` → 4 globals.
-- RLS smoke: anon can read `pricing_config` + `settings` only; cannot read `orders`/`customers`/etc.
-- Trigger smoke: a new signup creates one `customers` row and one `user_roles('customer')` row.
+Stripe/order creation (13.4), loyalty (13.5), admin (13.6), live upscale/bg-removal (13.7), Antigro (13.9).
