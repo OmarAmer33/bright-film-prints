@@ -3,6 +3,9 @@
 //
 // Guardrails:
 // 1. Signature verification before any work (Stripe SDK does timing-safe compare).
+//    Uses constructEventAsync — required in the Worker runtime, which only
+//    exposes SubtleCrypto (no synchronous crypto). The sync constructEvent
+//    throws "SubtleCryptoProvider cannot be used in a synchronous context".
 // 2. Idempotency layer 1: webhook_events has event_id as PK; duplicate insert -> 200.
 // 3. Idempotency layer 2: orders update is gated on `status = 'new'`, so a re-
 //    delivered event affecting an already-paid order updates 0 rows harmlessly.
@@ -18,16 +21,6 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-        console.error(
-          "[whsec check] defined:",
-          !!webhookSecret,
-          "len:",
-          webhookSecret?.length,
-          "prefix:",
-          webhookSecret?.slice(0, 9),
-        );
-
         const sig = request.headers.get("stripe-signature");
         if (!sig) {
           return new Response("Missing signature", { status: 400 });
@@ -42,16 +35,7 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
         try {
           event = await stripe.webhooks.constructEventAsync(rawBody, sig, getWebhookSecret());
         } catch (err) {
-          console.error(
-            "[stripe.webhook] signature verify failed:",
-            (err as Error).message,
-            "[whsec check] defined:",
-            !!webhookSecret,
-            "len:",
-            webhookSecret?.length,
-            "prefix:",
-            webhookSecret?.slice(0, 9),
-          );
+          console.error("[stripe.webhook] signature verify failed:", (err as Error).message);
           return new Response("Invalid signature", { status: 401 });
         }
 
