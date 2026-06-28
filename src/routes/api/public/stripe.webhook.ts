@@ -19,7 +19,7 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
     handlers: {
       POST: async ({ request }) => {
         const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-        console.log(
+        console.error(
           "[whsec check] defined:",
           !!webhookSecret,
           "len:",
