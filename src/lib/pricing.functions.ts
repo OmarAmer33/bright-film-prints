@@ -7,7 +7,7 @@ import {
   computeWholesalerSheet,
   type PricingRow,
   type Quote,
-} from "./pricing.server";
+} from "./pricing-core";
 
 function publicClient() {
   return createClient<Database>(
