@@ -184,12 +184,20 @@ function HowItWorks() {
   );
 }
 
-function PricingTeaser() {
-  const tiers = [
-    { size: "3 ft", price: "$19.99", perSqFt: "$3.63 / sq ft" },
-    { size: "10 ft", price: "$54.99", perSqFt: "$3.00 / sq ft", featured: true },
-    { size: "30 ft", price: "$139.99", perSqFt: "$2.55 / sq ft" },
-  ];
+function PricingTeaser({ tiers: liveTiers }: { tiers: { size_ft: number; price: number; per_sqft: number }[] }) {
+  const FEATURED_SIZES = [3, 10, 30] as const;
+  const lookup = new Map(liveTiers.map((t) => [t.size_ft, t]));
+  const tiers = FEATURED_SIZES.map((sz) => {
+    const row = lookup.get(sz);
+    return {
+      size: `${sz} ft`,
+      price: row ? `$${row.price.toFixed(2)}` : "—",
+      perSqFt: row ? `$${row.per_sqft.toFixed(2)} / sq ft` : "—",
+      featured: sz === 10,
+    };
+  });
+
+
 
   return (
     <section className="bg-dawn/40 border-y border-line">
