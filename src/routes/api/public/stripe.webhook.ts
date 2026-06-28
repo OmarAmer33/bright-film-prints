@@ -42,7 +42,7 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
         const insertEvent = await supabaseAdmin.from("webhook_events").insert({
           event_id: event.id,
           type: event.type,
-          payload: event as unknown as Record<string, unknown>,
+          payload: JSON.parse(JSON.stringify(event)),
         });
         if (insertEvent.error) {
           // Unique violation = already processed
