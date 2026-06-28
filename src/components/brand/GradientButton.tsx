@@ -30,13 +30,32 @@ type CommonProps = {
   className?: string;
 };
 
-type AsLink = CommonProps & { to: LinkProps["to"]; href?: never };
-type AsAnchor = CommonProps & { href: string; to?: never };
+type AsLink = CommonProps & { to: LinkProps["to"]; href?: never; onClick?: never; disabled?: never };
+type AsAnchor = CommonProps & { href: string; to?: never; onClick?: never; disabled?: never };
+type AsButton = CommonProps & {
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  disabled?: boolean;
+  to?: never;
+  href?: never;
+  type?: "button" | "submit";
+};
 
-export function GradientButton(props: AsLink | AsAnchor) {
+export function GradientButton(props: AsLink | AsAnchor | AsButton) {
   const { variant = "gradient", size = "md", children, className = "" } = props;
-  const cls = `${base} ${sizes[size]} ${variants[variant]} ${className}`;
+  const cls = `${base} ${sizes[size]} ${variants[variant]} ${className} disabled:cursor-not-allowed disabled:opacity-50`;
 
+  if ("onClick" in props && props.onClick) {
+    return (
+      <button
+        type={props.type ?? "button"}
+        onClick={props.onClick}
+        disabled={props.disabled}
+        className={cls}
+      >
+        {children}
+      </button>
+    );
+  }
   if ("href" in props && props.href) {
     return (
       <a href={props.href} className={cls}>
@@ -50,3 +69,4 @@ export function GradientButton(props: AsLink | AsAnchor) {
     </Link>
   );
 }
+
