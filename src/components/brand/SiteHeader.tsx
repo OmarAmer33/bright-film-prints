@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/bright-transfers-logo.png.asset.json";
+import { useCart } from "@/lib/cart-store";
+
 
 
 
