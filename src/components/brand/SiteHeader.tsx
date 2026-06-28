@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/bright-transfers-logo.png.asset.json";
+import { useCart } from "@/lib/cart-store";
+
 
 
 
@@ -41,13 +43,35 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <Link
-          to="/upload"
-          className="inline-flex items-center rounded-pill bg-ink px-4 py-2 text-sm font-bold text-paper transition-colors hover:bg-ink/85"
-        >
-          Start order
-        </Link>
+        <div className="flex items-center gap-2">
+          <CartLink />
+          <Link
+            to="/upload"
+            className="inline-flex items-center rounded-pill bg-ink px-4 py-2 text-sm font-bold text-paper transition-colors hover:bg-ink/85"
+          >
+            Start order
+          </Link>
+        </div>
       </div>
     </header>
   );
 }
+
+function CartLink() {
+  const count = useCart((s) => s.items.length);
+  return (
+    <Link
+      to="/cart"
+      className="relative inline-flex items-center rounded-pill border border-line bg-paper px-3 py-2 text-sm font-medium text-ink/80 transition-colors hover:text-ink"
+      aria-label={`Cart (${count} item${count === 1 ? "" : "s"})`}
+    >
+      Cart
+      {count > 0 && (
+        <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-ember px-1.5 text-[11px] font-bold text-paper">
+          {count}
+        </span>
+      )}
+    </Link>
+  );
+}
+

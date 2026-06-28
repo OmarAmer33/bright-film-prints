@@ -14,9 +14,12 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CartRouteImport } from './routes/cart'
 import { Route as BuildRouteImport } from './routes/build'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ToolsUpscaleRouteImport } from './routes/tools.upscale'
+import { Route as ApiUploadsUploadRouteImport } from './routes/api/uploads.upload'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
@@ -43,6 +46,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuildRoute = BuildRouteImport.update({
   id: '/build',
   path: '/build',
@@ -58,37 +66,56 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ToolsUpscaleRoute = ToolsUpscaleRouteImport.update({
+  id: '/tools/upscale',
+  path: '/tools/upscale',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadsUploadRoute = ApiUploadsUploadRouteImport.update({
+  id: '/api/uploads/upload',
+  path: '/api/uploads/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/build': typeof BuildRoute
+  '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
   '/faq': typeof FaqRoute
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/upload': typeof UploadRoute
+  '/tools/upscale': typeof ToolsUpscaleRoute
+  '/api/uploads/upload': typeof ApiUploadsUploadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/build': typeof BuildRoute
+  '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
   '/faq': typeof FaqRoute
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/upload': typeof UploadRoute
+  '/tools/upscale': typeof ToolsUpscaleRoute
+  '/api/uploads/upload': typeof ApiUploadsUploadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/build': typeof BuildRoute
+  '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
   '/faq': typeof FaqRoute
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/upload': typeof UploadRoute
+  '/tools/upscale': typeof ToolsUpscaleRoute
+  '/api/uploads/upload': typeof ApiUploadsUploadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,42 +123,54 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/build'
+    | '/cart'
     | '/contact'
     | '/faq'
     | '/how-it-works'
     | '/pricing'
     | '/upload'
+    | '/tools/upscale'
+    | '/api/uploads/upload'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/build'
+    | '/cart'
     | '/contact'
     | '/faq'
     | '/how-it-works'
     | '/pricing'
     | '/upload'
+    | '/tools/upscale'
+    | '/api/uploads/upload'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/build'
+    | '/cart'
     | '/contact'
     | '/faq'
     | '/how-it-works'
     | '/pricing'
     | '/upload'
+    | '/tools/upscale'
+    | '/api/uploads/upload'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   BuildRoute: typeof BuildRoute
+  CartRoute: typeof CartRoute
   ContactRoute: typeof ContactRoute
   FaqRoute: typeof FaqRoute
   HowItWorksRoute: typeof HowItWorksRoute
   PricingRoute: typeof PricingRoute
   UploadRoute: typeof UploadRoute
+  ToolsUpscaleRoute: typeof ToolsUpscaleRoute
+  ApiUploadsUploadRoute: typeof ApiUploadsUploadRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -171,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/build': {
       id: '/build'
       path: '/build'
@@ -192,6 +238,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tools/upscale': {
+      id: '/tools/upscale'
+      path: '/tools/upscale'
+      fullPath: '/tools/upscale'
+      preLoaderRoute: typeof ToolsUpscaleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/uploads/upload': {
+      id: '/api/uploads/upload'
+      path: '/api/uploads/upload'
+      fullPath: '/api/uploads/upload'
+      preLoaderRoute: typeof ApiUploadsUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -199,11 +259,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   BuildRoute: BuildRoute,
+  CartRoute: CartRoute,
   ContactRoute: ContactRoute,
   FaqRoute: FaqRoute,
   HowItWorksRoute: HowItWorksRoute,
   PricingRoute: PricingRoute,
   UploadRoute: UploadRoute,
+  ToolsUpscaleRoute: ToolsUpscaleRoute,
+  ApiUploadsUploadRoute: ApiUploadsUploadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

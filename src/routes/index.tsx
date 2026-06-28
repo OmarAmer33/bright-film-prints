@@ -4,6 +4,13 @@ import { SiteFooter } from "@/components/brand/SiteFooter";
 import { PriceTicker } from "@/components/brand/PriceTicker";
 import { GradientButton } from "@/components/brand/GradientButton";
 import { TrustRow } from "@/components/brand/TrustRow";
+import { getPricing, type PricingPayload } from "@/lib/pricing.functions";
+
+const FALLBACK_TIERS = [
+  { size_ft: 3, price: 19.99, per_sqft: 3.63 },
+  { size_ft: 10, price: 54.99, per_sqft: 3.0 },
+  { size_ft: 30, price: 139.99, per_sqft: 2.55 },
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,10 +28,30 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+  loader: async (): Promise<PricingPayload | null> => {
+    try {
+      return await getPricing();
+    } catch (e) {
+      console.error("[home loader]", e);
+      return null;
+    }
+  },
+  errorComponent: ({ reset }) => (
+    <div className="mx-auto max-w-2xl px-6 py-20 text-center">
+      <h1 className="text-3xl text-ink">Something went sideways.</h1>
+      <button onClick={reset} className="mt-6 rounded-pill bg-ink px-5 py-2 text-sm font-bold text-paper">
+        Try again
+      </button>
+    </div>
+  ),
+  notFoundComponent: () => <div className="p-20 text-center">Not found</div>,
   component: Index,
 });
 
+
 function Index() {
+  const data = Route.useLoaderData();
+  const tiers = data?.tiers ?? FALLBACK_TIERS;
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
@@ -32,7 +59,7 @@ function Index() {
         <Hero />
         <TrustBand />
         <HowItWorks />
-        <PricingTeaser />
+        <PricingTeaser tiers={tiers} />
         <ClosingCTA />
         {/* Hidden fidelity QA — compare oklch tokens against pure hex anchors. */}
         <FidelitySwatches />
@@ -41,6 +68,7 @@ function Index() {
     </div>
   );
 }
+
 
 function Hero() {
   return (
@@ -156,12 +184,20 @@ function HowItWorks() {
   );
 }
 
-function PricingTeaser() {
-  const tiers = [
-    { size: "3 ft", price: "$19.99", perSqFt: "$3.63 / sq ft" },
-    { size: "10 ft", price: "$54.99", perSqFt: "$3.00 / sq ft", featured: true },
-    { size: "30 ft", price: "$139.99", perSqFt: "$2.55 / sq ft" },
-  ];
+function PricingTeaser({ tiers: liveTiers }: { tiers: { size_ft: number; price: number; per_sqft: number }[] }) {
+  const FEATURED_SIZES = [3, 10, 30] as const;
+  const lookup = new Map(liveTiers.map((t) => [t.size_ft, t]));
+  const tiers = FEATURED_SIZES.map((sz) => {
+    const row = lookup.get(sz);
+    return {
+      size: `${sz} ft`,
+      price: row ? `$${row.price.toFixed(2)}` : "—",
+      perSqFt: row ? `$${row.per_sqft.toFixed(2)} / sq ft` : "—",
+      featured: sz === 10,
+    };
+  });
+
+
 
   return (
     <section className="bg-dawn/40 border-y border-line">
