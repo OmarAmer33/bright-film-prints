@@ -99,6 +99,7 @@ export type Database = {
           order_id: string
           preview_url: string | null
           print_file_url: string | null
+          processing_fee: number
           quantity: number
           size_ft: number
           source: Database["public"]["Enums"]["order_item_source"]
@@ -114,6 +115,7 @@ export type Database = {
           order_id: string
           preview_url?: string | null
           print_file_url?: string | null
+          processing_fee?: number
           quantity: number
           size_ft: number
           source: Database["public"]["Enums"]["order_item_source"]
@@ -129,6 +131,7 @@ export type Database = {
           order_id?: string
           preview_url?: string | null
           print_file_url?: string | null
+          processing_fee?: number
           quantity?: number
           size_ft?: number
           source?: Database["public"]["Enums"]["order_item_source"]
@@ -150,6 +153,7 @@ export type Database = {
           created_at: string
           customer_id: string | null
           email: string
+          guest_email_lookup_token: string | null
           id: string
           is_rush: boolean
           rewards_earned: number
@@ -158,6 +162,7 @@ export type Database = {
           shipping_address: Json | null
           shipping_fee: number
           status: Database["public"]["Enums"]["order_status"]
+          stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
           subtotal: number
           tax: number
@@ -170,6 +175,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           email: string
+          guest_email_lookup_token?: string | null
           id?: string
           is_rush?: boolean
           rewards_earned?: number
@@ -178,6 +184,7 @@ export type Database = {
           shipping_address?: Json | null
           shipping_fee?: number
           status?: Database["public"]["Enums"]["order_status"]
+          stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
           subtotal?: number
           tax?: number
@@ -190,6 +197,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           email?: string
+          guest_email_lookup_token?: string | null
           id?: string
           is_rush?: boolean
           rewards_earned?: number
@@ -198,6 +206,7 @@ export type Database = {
           shipping_address?: Json | null
           shipping_fee?: number
           status?: Database["public"]["Enums"]["order_status"]
+          stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
           subtotal?: number
           tax?: number
@@ -380,6 +389,24 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          event_id: string
+          processed_at: string
+          type: string
+        }
+        Insert: {
+          event_id: string
+          processed_at?: string
+          type: string
+        }
+        Update: {
+          event_id?: string
+          processed_at?: string
+          type?: string
         }
         Relationships: []
       }
