@@ -19,7 +19,9 @@ import { Route as BuildRouteImport } from './routes/build'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ToolsUpscaleRouteImport } from './routes/tools.upscale'
+import { Route as OrdersTokenRouteImport } from './routes/orders.$token'
 import { Route as ApiUploadsUploadRouteImport } from './routes/api/uploads.upload'
+import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe.webhook'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
@@ -71,9 +73,19 @@ const ToolsUpscaleRoute = ToolsUpscaleRouteImport.update({
   path: '/tools/upscale',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrdersTokenRoute = OrdersTokenRouteImport.update({
+  id: '/orders/$token',
+  path: '/orders/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiUploadsUploadRoute = ApiUploadsUploadRouteImport.update({
   id: '/api/uploads/upload',
   path: '/api/uploads/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
+  id: '/api/public/stripe/webhook',
+  path: '/api/public/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -87,8 +99,10 @@ export interface FileRoutesByFullPath {
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/upload': typeof UploadRoute
+  '/orders/$token': typeof OrdersTokenRoute
   '/tools/upscale': typeof ToolsUpscaleRoute
   '/api/uploads/upload': typeof ApiUploadsUploadRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -100,8 +114,10 @@ export interface FileRoutesByTo {
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/upload': typeof UploadRoute
+  '/orders/$token': typeof OrdersTokenRoute
   '/tools/upscale': typeof ToolsUpscaleRoute
   '/api/uploads/upload': typeof ApiUploadsUploadRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -114,8 +130,10 @@ export interface FileRoutesById {
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/upload': typeof UploadRoute
+  '/orders/$token': typeof OrdersTokenRoute
   '/tools/upscale': typeof ToolsUpscaleRoute
   '/api/uploads/upload': typeof ApiUploadsUploadRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -129,8 +147,10 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/pricing'
     | '/upload'
+    | '/orders/$token'
     | '/tools/upscale'
     | '/api/uploads/upload'
+    | '/api/public/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -142,8 +162,10 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/pricing'
     | '/upload'
+    | '/orders/$token'
     | '/tools/upscale'
     | '/api/uploads/upload'
+    | '/api/public/stripe/webhook'
   id:
     | '__root__'
     | '/'
@@ -155,8 +177,10 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/pricing'
     | '/upload'
+    | '/orders/$token'
     | '/tools/upscale'
     | '/api/uploads/upload'
+    | '/api/public/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -169,8 +193,10 @@ export interface RootRouteChildren {
   HowItWorksRoute: typeof HowItWorksRoute
   PricingRoute: typeof PricingRoute
   UploadRoute: typeof UploadRoute
+  OrdersTokenRoute: typeof OrdersTokenRoute
   ToolsUpscaleRoute: typeof ToolsUpscaleRoute
   ApiUploadsUploadRoute: typeof ApiUploadsUploadRoute
+  ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -245,11 +271,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ToolsUpscaleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orders/$token': {
+      id: '/orders/$token'
+      path: '/orders/$token'
+      fullPath: '/orders/$token'
+      preLoaderRoute: typeof OrdersTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/uploads/upload': {
       id: '/api/uploads/upload'
       path: '/api/uploads/upload'
       fullPath: '/api/uploads/upload'
       preLoaderRoute: typeof ApiUploadsUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/stripe/webhook': {
+      id: '/api/public/stripe/webhook'
+      path: '/api/public/stripe/webhook'
+      fullPath: '/api/public/stripe/webhook'
+      preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -265,8 +305,10 @@ const rootRouteChildren: RootRouteChildren = {
   HowItWorksRoute: HowItWorksRoute,
   PricingRoute: PricingRoute,
   UploadRoute: UploadRoute,
+  OrdersTokenRoute: OrdersTokenRoute,
   ToolsUpscaleRoute: ToolsUpscaleRoute,
   ApiUploadsUploadRoute: ApiUploadsUploadRoute,
+  ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

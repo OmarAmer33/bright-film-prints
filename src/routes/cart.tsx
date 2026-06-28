@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
 import { useCart } from "@/lib/cart-store";
+import { createCheckout } from "@/lib/checkout.functions";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -17,6 +20,39 @@ function CartPage() {
   const items = useCart((s) => s.items);
   const remove = useCart((s) => s.removeItem);
   const subtotal = useCart((s) => s.subtotal());
+  const checkoutFn = useServerFn(createCheckout);
+
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onCheckout = async () => {
+    setError(null);
+    setSubmitting(true);
+    try {
+      // Send only dimensions/qty/source — server reprices everything.
+      const payload = {
+        email: email.trim() || undefined,
+        items: items.map((i) => ({
+          source: i.source,
+          design_w: i.design_w,
+          design_h: i.design_h,
+          job_qty: i.job_qty,
+          // Tampering-detection: what the client thinks it should pay for.
+          // Server will reject if its own recomputation disagrees.
+          claimed_size_ft: i.size_ft,
+          claimed_sheet_count: i.quantity,
+          upload_id: i.upload_id,
+        })),
+      };
+      const result = await checkoutFn({ data: payload });
+      window.location.assign(result.url);
+    } catch (e) {
+      console.error(e);
+      setError((e as Error).message || "Checkout failed. Please try again.");
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -71,17 +107,33 @@ function CartPage() {
                 ${subtotal.toFixed(2)}
               </span>
             </div>
+            <p className="text-right text-xs text-stone">
+              Shipping + tax shown at checkout.
+            </p>
 
-            <div className="mt-6 flex flex-col items-end gap-2">
+            <div className="mt-6 flex flex-col items-stretch gap-3 sm:items-end">
+              <div className="w-full sm:max-w-sm">
+                <label className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone">
+                  Email for receipt (optional)
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="mt-1 w-full rounded-pill border border-line bg-paper px-4 py-2 text-sm text-ink placeholder:text-stone/60 focus:border-ember focus:outline-none"
+                />
+              </div>
+              {error && (
+                <p className="text-right text-sm text-ember">{error}</p>
+              )}
               <button
-                disabled
-                className="cursor-not-allowed rounded-pill bg-ink/30 px-6 py-3 text-sm font-bold text-paper"
+                onClick={onCheckout}
+                disabled={submitting}
+                className="rounded-pill bg-ink px-6 py-3 text-sm font-bold text-paper disabled:cursor-wait disabled:bg-ink/60"
               >
-                Checkout (coming in next step)
+                {submitting ? "Redirecting to Stripe…" : "Checkout →"}
               </button>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone">
-                Stripe checkout lands next
-              </p>
             </div>
           </div>
         )}
