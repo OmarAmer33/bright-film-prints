@@ -5,27 +5,25 @@ import {
   buildQuote,
   computeSheet,
   computeWholesalerSheet,
+  normalizeBreakdown,
+  breakdownsEqual,
+  describeBreakdown,
   type PricingRow,
+  type SheetBreakdownLine,
 } from "./pricing-core";
 
 // ---------------- Input validation ----------------
-// Accept ONLY dimensions/qty/source — never prices, never claimed sizes that we'll trust.
-// Client may include `claimed_size_ft` and `claimed_quantity` purely so we can compare
-// them against our own recomputation and reject tampering loudly. The server still
-// trusts only its own recomputed values.
+// One item = one print job. Server reprices each job ONCE from its dimensions.
+// `claimed_breakdown` is what the client thinks it should pay for; the server
+// compares its own recomputed normalized breakdown and rejects mismatches.
 export type CheckoutLineInput = {
   source: "upload" | "builder";
-  // DIY mode
   design_w?: number;
   design_h?: number;
-  job_qty?: number; // pieces the customer wants to print
-  // Wholesaler mode
+  job_qty?: number;
   length_in?: number;
-  // Common
   upload_id?: string;
-  // Tampering-detection fields — server compares to recomputed values
-  claimed_size_ft?: number;
-  claimed_sheet_count?: number;
+  claimed_breakdown?: SheetBreakdownLine[];
 };
 
 export type CheckoutInput = {
@@ -38,6 +36,20 @@ function numOrUndef(v: unknown): number | undefined {
   if (v === undefined || v === null || v === "") return undefined;
   const n = Number(v);
   return Number.isFinite(n) ? n : undefined;
+}
+
+function validateClaimedBreakdown(v: unknown): SheetBreakdownLine[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: SheetBreakdownLine[] = [];
+  for (const raw of v.slice(0, 50)) {
+    const o = (raw ?? {}) as Record<string, unknown>;
+    const size_ft = Number(o.size_ft);
+    const count = Math.floor(Number(o.count));
+    if (Number.isFinite(size_ft) && size_ft > 0 && Number.isFinite(count) && count > 0) {
+      out.push({ size_ft, count });
+    }
+  }
+  return out.length ? out : undefined;
 }
 
 function validateCheckoutInput(raw: unknown): CheckoutInput {
@@ -53,8 +65,7 @@ function validateCheckoutInput(raw: unknown): CheckoutInput {
       job_qty: numOrUndef(o.job_qty),
       length_in: numOrUndef(o.length_in),
       upload_id: typeof o.upload_id === "string" ? o.upload_id : undefined,
-      claimed_size_ft: numOrUndef(o.claimed_size_ft),
-      claimed_sheet_count: numOrUndef(o.claimed_sheet_count),
+      claimed_breakdown: validateClaimedBreakdown(o.claimed_breakdown),
     };
   });
   const email = typeof r.email === "string" && r.email.includes("@") ? r.email.trim() : undefined;
@@ -118,95 +129,84 @@ export const createCheckout = createServerFn({ method: "POST" })
     const standard_ship_fee = num(settingsMap.get("standard_ship_fee"), 6.99);
     const rush_fee = num(settingsMap.get("rush_fee"), 19.99);
 
-    // ---- Reprice every line server-side and reject tampering loudly ----
-    type ResolvedLine = {
+    // ---- Reprice every JOB once server-side; reject tampering loudly ----
+    type ResolvedJob = {
       source: "upload" | "builder";
-      size_ft: number;
-      sheet_count: number;
-      unit_price: number;
-      line_total: number;
       job_qty: number;
       design_w: number | null;
       design_h: number | null;
       length_in: number;
       per_piece: number;
       upload_id: string | null;
+      line_total: number;
+      sheets: { size_ft: number; count: number; unit_price: number; line_total: number }[];
     };
 
-    const resolved: ResolvedLine[] = [];
+    const jobs: ResolvedJob[] = [];
 
     for (const [idx, item] of data.items.entries()) {
       let comp;
       let jobQty = 1;
-      if (item.source === "upload" || item.source === "builder") {
-        // DIY or builder = treat as design×qty calculator
-        if (item.length_in && item.length_in > 0 && !item.design_w && !item.design_h) {
-          // Wholesaler-style line (length-only)
-          comp = computeWholesalerSheet({ length_in: item.length_in });
-          jobQty = 1;
-        } else {
-          jobQty = Math.max(1, Math.floor(item.job_qty ?? 0));
-          comp = computeSheet({
-            design_w: item.design_w ?? 0,
-            design_h: item.design_h ?? 0,
-            qty: jobQty,
-          });
-          if (comp.over_width) {
-            throw new Error(`Item ${idx + 1}: design exceeds 22" film width`);
-          }
-          if (!item.design_w || !item.design_h || jobQty <= 0) {
-            throw new Error(`Item ${idx + 1}: missing dimensions or quantity`);
-          }
-        }
+      const isWholesaler =
+        item.length_in && item.length_in > 0 && !item.design_w && !item.design_h;
+
+      if (isWholesaler) {
+        comp = computeWholesalerSheet({ length_in: item.length_in! });
       } else {
-        throw new Error(`Item ${idx + 1}: invalid source`);
+        jobQty = Math.max(1, Math.floor(item.job_qty ?? 0));
+        comp = computeSheet({
+          design_w: item.design_w ?? 0,
+          design_h: item.design_h ?? 0,
+          qty: jobQty,
+        });
+        if (comp.over_width) {
+          throw new Error(`Item ${idx + 1}: design exceeds 22" film width`);
+        }
+        if (!item.design_w || !item.design_h || jobQty <= 0) {
+          throw new Error(`Item ${idx + 1}: missing dimensions or quantity`);
+        }
       }
 
       const quote = buildQuote(comp, pricing, jobQty);
+      const computedNorm = normalizeBreakdown(quote.breakdown);
 
-      // Each priced line in the quote is its own ResolvedLine
-      for (const line of quote.lines) {
-        // Tampering checks — server trusts its own recomputed values.
-        if (
-          item.claimed_size_ft !== undefined &&
-          quote.lines.length === 1 &&
-          Number(item.claimed_size_ft) !== line.size_ft
-        ) {
+      // ---- Tampering check: claimed_breakdown must match recomputed ----
+      if (item.claimed_breakdown) {
+        if (!breakdownsEqual(item.claimed_breakdown, computedNorm)) {
           throw new Error(
-            `Item ${idx + 1}: claimed size ${item.claimed_size_ft}ft does not match computed size ${line.size_ft}ft`,
+            `Item ${idx + 1}: claimed sheet breakdown does not match computed. ` +
+              `Claimed [${describeBreakdown(item.claimed_breakdown)}] vs computed [${describeBreakdown(computedNorm)}]`,
           );
         }
-        if (
-          item.claimed_sheet_count !== undefined &&
-          quote.lines.length === 1 &&
-          Number(item.claimed_sheet_count) !== line.count
-        ) {
-          throw new Error(
-            `Item ${idx + 1}: claimed sheet count ${item.claimed_sheet_count} does not match computed count ${line.count}`,
-          );
-        }
-
-        resolved.push({
-          source: item.source,
-          size_ft: line.size_ft,
-          sheet_count: line.count,
-          unit_price: line.unit_price,
-          line_total: line.line_total,
-          job_qty: jobQty,
-          design_w: item.design_w ?? null,
-          design_h: item.design_h ?? null,
-          length_in: comp.length_in,
-          per_piece: quote.per_piece,
-          upload_id: item.upload_id ?? null,
-        });
       }
+
+      if (!quote.lines.length) {
+        throw new Error(`Item ${idx + 1}: could not price this job`);
+      }
+
+      jobs.push({
+        source: item.source,
+        job_qty: jobQty,
+        design_w: item.design_w ?? null,
+        design_h: item.design_h ?? null,
+        length_in: comp.length_in,
+        per_piece: quote.per_piece,
+        upload_id: item.upload_id ?? null,
+        line_total: quote.subtotal,
+        sheets: quote.lines.map((l) => ({
+          size_ft: l.size_ft,
+          count: l.count,
+          unit_price: l.unit_price,
+          line_total: l.line_total,
+        })),
+      });
     }
 
-    if (!resolved.length) {
+    if (!jobs.length) {
       throw new Error("Could not price any items");
     }
 
-    const subtotal = Number(resolved.reduce((s, l) => s + l.line_total, 0).toFixed(2));
+    const subtotal = Number(jobs.reduce((s, j) => s + j.line_total, 0).toFixed(2));
     const shipping_fee = subtotal >= free_ship_threshold ? 0 : standard_ship_fee;
     const rushFeeApplied = data.is_rush ? rush_fee : 0;
     const total = Number((subtotal + shipping_fee + rushFeeApplied).toFixed(2));
@@ -230,18 +230,21 @@ export const createCheckout = createServerFn({ method: "POST" })
       .single();
     if (orderErr || !orderRow) throw orderErr ?? new Error("Order insert failed");
 
-    const itemsRows = resolved.map((l) => ({
-      order_id: orderRow.id,
-      source: l.source,
-      size_ft: l.size_ft,
-      quantity: l.sheet_count,
-      unit_price: l.unit_price,
-      line_total: l.line_total,
-      notes:
-        l.design_w && l.design_h
-          ? `${l.job_qty} pieces · ${l.design_w}×${l.design_h}" · ~$${l.per_piece.toFixed(2)}/pc${l.upload_id ? ` · upload:${l.upload_id}` : ""}`
-          : `${l.length_in.toFixed(0)}" wholesaler sheet${l.upload_id ? ` · upload:${l.upload_id}` : ""}`,
-    }));
+    // One order_items row per resolved sheet tier per job.
+    const itemsRows = jobs.flatMap((j) =>
+      j.sheets.map((s) => ({
+        order_id: orderRow.id,
+        source: j.source,
+        size_ft: s.size_ft,
+        quantity: s.count,
+        unit_price: s.unit_price,
+        line_total: s.line_total,
+        notes:
+          j.design_w && j.design_h
+            ? `${j.job_qty} pieces · ${j.design_w}×${j.design_h}" · ~$${j.per_piece.toFixed(2)}/pc${j.upload_id ? ` · upload:${j.upload_id}` : ""}`
+            : `${j.length_in.toFixed(0)}" wholesaler sheet${j.upload_id ? ` · upload:${j.upload_id}` : ""}`,
+      })),
+    );
 
     const { error: itemsErr } = await supabaseAdmin.from("order_items").insert(itemsRows);
     if (itemsErr) throw itemsErr;
@@ -254,7 +257,10 @@ export const createCheckout = createServerFn({ method: "POST" })
       (process.env.PUBLIC_SITE_URL as string | undefined) ??
       "https://bright-film-prints.lovable.app";
 
-    const totalSheets = resolved.reduce((s, l) => s + l.sheet_count, 0);
+    const totalSheets = jobs.reduce(
+      (s, j) => s + j.sheets.reduce((ss, sh) => ss + sh.count, 0),
+      0,
+    );
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -268,8 +274,10 @@ export const createCheckout = createServerFn({ method: "POST" })
             unit_amount: Math.round(total * 100),
             product_data: {
               name: `Bright Transfers gang sheets — ${totalSheets} sheet${totalSheets === 1 ? "" : "s"}`,
-              description: resolved
-                .map((l) => `${l.sheet_count}× ${l.size_ft}ft @ $${l.unit_price.toFixed(2)}`)
+              description: jobs
+                .flatMap((j) =>
+                  j.sheets.map((s) => `${s.count}× ${s.size_ft}ft @ $${s.unit_price.toFixed(2)}`),
+                )
                 .join(" · "),
             },
           },

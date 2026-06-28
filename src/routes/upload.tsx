@@ -203,22 +203,24 @@ function DiyFlow({
         setAddedMsg("Couldn't price this — check your dimensions.");
         return;
       }
-      for (const line of quote.lines) {
-        addItem({
-          source: "upload",
-          size_ft: line.size_ft,
-          quantity: line.count,
-          unit_price: line.unit_price,
-          line_total: line.line_total,
-          job_qty: qty,
-          design_w: widthIn,
-          design_h: heightIn,
-          per_piece: quote.per_piece,
-          upload_id: upload.id,
-          preview_url: upload.signed_url ?? undefined,
-          label: `${qty} × ${widthIn}″×${heightIn}″ prints`,
-        });
-      }
+      addItem({
+        source: "upload",
+        kind: "diy",
+        design_w: widthIn,
+        design_h: heightIn,
+        job_qty: qty,
+        per_piece: quote.per_piece,
+        upload_id: upload.id,
+        preview_url: upload.signed_url ?? undefined,
+        label: `${qty} × ${widthIn}″×${heightIn}″ prints`,
+        breakdown: quote.lines.map((l) => ({
+          size_ft: l.size_ft,
+          count: l.count,
+          unit_price: l.unit_price,
+          line_total: l.line_total,
+        })),
+        line_total: quote.subtotal,
+      });
       setAddedMsg("Added to cart.");
       router.invalidate();
     } catch (e) {
@@ -325,18 +327,21 @@ function WholesalerFlow({
     setMsg(null);
     try {
       const q = await quoteFn({ data: { mode: "wholesaler", length_in: lengthIn } });
-      for (const line of q.lines) {
-        addItem({
-          source: "upload",
-          size_ft: line.size_ft,
-          quantity: line.count,
-          unit_price: line.unit_price,
-          line_total: line.line_total,
-          upload_id: upload.id,
-          preview_url: upload.signed_url ?? undefined,
-          label: `Wholesaler sheet · ${lengthIn}″`,
-        });
-      }
+      addItem({
+        source: "upload",
+        kind: "wholesaler",
+        length_in: lengthIn,
+        upload_id: upload.id,
+        preview_url: upload.signed_url ?? undefined,
+        label: `Wholesaler sheet · ${lengthIn}″`,
+        breakdown: q.lines.map((l) => ({
+          size_ft: l.size_ft,
+          count: l.count,
+          unit_price: l.unit_price,
+          line_total: l.line_total,
+        })),
+        line_total: q.subtotal,
+      });
       setMsg("Added to cart.");
     } catch (e) {
       console.error(e);
