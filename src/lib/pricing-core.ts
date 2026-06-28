@@ -34,6 +34,54 @@ export function snapToTier(inches: number): number {
   return MAX_TIER_IN;
 }
 
+/**
+ * Merge same-size_ft entries into a single line (sum counts). Preserves the
+ * order of first occurrence. e.g. [{30,2},{30,1},{5,1}] -> [{30,3},{5,1}].
+ */
+export function normalizeBreakdown(
+  breakdown: SheetBreakdownLine[],
+): SheetBreakdownLine[] {
+  const out: SheetBreakdownLine[] = [];
+  const idx = new Map<number, number>();
+  for (const b of breakdown) {
+    const size = Number(b.size_ft);
+    const count = Math.max(0, Math.floor(Number(b.count) || 0));
+    if (!size || !count) continue;
+    const existing = idx.get(size);
+    if (existing === undefined) {
+      idx.set(size, out.length);
+      out.push({ size_ft: size, count });
+    } else {
+      out[existing].count += count;
+    }
+  }
+  return out;
+}
+
+/** Compare two breakdowns ignoring tier ordering; sums same-size entries first. */
+export function breakdownsEqual(
+  a: SheetBreakdownLine[],
+  b: SheetBreakdownLine[],
+): boolean {
+  const na = normalizeBreakdown(a);
+  const nb = normalizeBreakdown(b);
+  if (na.length !== nb.length) return false;
+  const sort = (x: SheetBreakdownLine[]) =>
+    [...x].sort((p, q) => p.size_ft - q.size_ft);
+  const sa = sort(na);
+  const sb = sort(nb);
+  for (let i = 0; i < sa.length; i++) {
+    if (sa[i].size_ft !== sb[i].size_ft || sa[i].count !== sb[i].count) return false;
+  }
+  return true;
+}
+
+export function describeBreakdown(breakdown: SheetBreakdownLine[]): string {
+  const n = normalizeBreakdown(breakdown);
+  if (!n.length) return "—";
+  return n.map((b) => `${b.count} × ${b.size_ft} ft`).join(" + ");
+}
+
 export function computeSheet(input: {
   design_w: number;
   design_h: number;
@@ -61,7 +109,9 @@ export function computeSheet(input: {
 export function breakdownForLength(length_in: number): SheetBreakdownLine[] {
   if (length_in <= 0) return [];
   if (length_in <= MAX_TIER_IN) {
-    return [{ size_ft: inchesToFeet(snapToTier(length_in)), count: 1 }];
+    return normalizeBreakdown([
+      { size_ft: inchesToFeet(snapToTier(length_in)), count: 1 },
+    ]);
   }
   const full30 = Math.floor(length_in / MAX_TIER_IN);
   const remainder_in = length_in - full30 * MAX_TIER_IN;
@@ -71,7 +121,7 @@ export function breakdownForLength(length_in: number): SheetBreakdownLine[] {
       remainder_in <= MIN_TIER_IN ? MIN_TIER_IN : smallestTierFor(remainder_in);
     lines.push({ size_ft: inchesToFeet(remainder_size_in), count: 1 });
   }
-  return lines;
+  return normalizeBreakdown(lines);
 }
 
 export function computeWholesalerSheet(input: { length_in: number }): SheetComputation {
@@ -105,7 +155,8 @@ export function priceBreakdown(
   pricing: PricingRow[],
 ): { lines: PricedLine[]; subtotal: number } {
   const lookup = new Map(pricing.map((r) => [r.size_ft, r.price]));
-  const lines: PricedLine[] = breakdown.map((b) => {
+  const normalized = normalizeBreakdown(breakdown);
+  const lines: PricedLine[] = normalized.map((b) => {
     const unit_price = Number(lookup.get(b.size_ft) ?? 0);
     return {
       size_ft: b.size_ft,
@@ -126,7 +177,7 @@ export function buildQuote(
   const { lines, subtotal } = priceBreakdown(comp.breakdown, pricing);
   const per_piece = qty > 0 ? Number((subtotal / qty).toFixed(2)) : 0;
   return {
-    breakdown: comp.breakdown,
+    breakdown: normalizeBreakdown(comp.breakdown),
     lines,
     subtotal,
     per_piece,

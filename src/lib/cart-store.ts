@@ -1,21 +1,37 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type CartItem = {
-  id: string; // local uuid
-  source: "upload" | "builder";
+export type CartBreakdownLine = {
   size_ft: number;
-  quantity: number; // sheet count for this size_ft
-  unit_price: number; // per-sheet
-  line_total: number; // server-priced
-  // Original print job context (for display + future order_items materialization)
-  job_qty?: number; // number of pieces the customer is making (DIY)
+  count: number;
+  unit_price: number;
+  line_total: number;
+};
+
+/**
+ * One CartItem = one print job. A job may be priced as multiple sheet tiers
+ * (auto-split), but it is still ONE item in the cart, ONE row at checkout,
+ * and the server reprices it ONCE from its dimensions.
+ */
+export type CartItem = {
+  id: string;
+  source: "upload" | "builder";
+  kind: "diy" | "wholesaler";
+  // DIY context
   design_w?: number;
   design_h?: number;
-  per_piece?: number;
+  job_qty?: number;
+  // Wholesaler context
+  length_in?: number;
+  // Display + materialization
   upload_id?: string;
   preview_url?: string;
-  label?: string; // e.g. "12 × 4×10 prints"
+  label?: string;
+  per_piece?: number;
+  // Full normalized sheet breakdown for this one job
+  breakdown: CartBreakdownLine[];
+  // Sum of breakdown[].line_total — what this whole job costs.
+  line_total: number;
 };
 
 type CartState = {
@@ -40,6 +56,6 @@ export const useCart = create<CartState>()(
       subtotal: () =>
         Number(get().items.reduce((sum, i) => sum + i.line_total, 0).toFixed(2)),
     }),
-    { name: "bt-cart-v1" },
+    { name: "bt-cart-v2" }, // bumped from v1: shape changed (job-per-item)
   ),
 );

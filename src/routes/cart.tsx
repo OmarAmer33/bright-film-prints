@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
 import { useCart } from "@/lib/cart-store";
 import { createCheckout } from "@/lib/checkout.functions";
+import { describeBreakdown } from "@/lib/pricing-core";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -30,7 +31,8 @@ function CartPage() {
     setError(null);
     setSubmitting(true);
     try {
-      // Send only dimensions/qty/source — server reprices everything.
+      // ONE payload entry per job. Server reprices each job exactly once from
+      // its dimensions and compares against claimed_breakdown for tamper checks.
       const payload = {
         email: email.trim() || undefined,
         items: items.map((i) => ({
@@ -38,11 +40,12 @@ function CartPage() {
           design_w: i.design_w,
           design_h: i.design_h,
           job_qty: i.job_qty,
-          // Tampering-detection: what the client thinks it should pay for.
-          // Server will reject if its own recomputation disagrees.
-          claimed_size_ft: i.size_ft,
-          claimed_sheet_count: i.quantity,
+          length_in: i.length_in,
           upload_id: i.upload_id,
+          claimed_breakdown: i.breakdown.map((b) => ({
+            size_ft: b.size_ft,
+            count: b.count,
+          })),
         })),
       };
       const result = await checkoutFn({ data: payload });
@@ -76,14 +79,14 @@ function CartPage() {
             {items.map((i) => (
               <div
                 key={i.id}
-                className="flex items-center justify-between gap-4 rounded-card border border-line bg-paper p-4"
+                className="flex items-start justify-between gap-4 rounded-card border border-line bg-paper p-4"
               >
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-ink">
-                    {i.quantity} × {i.size_ft} ft sheet
-                  </div>
-                  <div className="mt-0.5 text-xs text-stone">
                     {i.label ?? (i.source === "upload" ? "Uploaded art" : "Built sheet")}
+                  </div>
+                  <div className="mt-1 text-xs text-stone">
+                    {describeBreakdown(i.breakdown)} sheet{totalSheets(i.breakdown) === 1 ? "" : "s"}
                     {i.per_piece ? ` · ~$${i.per_piece.toFixed(2)} / piece` : ""}
                   </div>
                 </div>
@@ -141,4 +144,8 @@ function CartPage() {
       <SiteFooter />
     </div>
   );
+}
+
+function totalSheets(breakdown: { count: number }[]) {
+  return breakdown.reduce((s, b) => s + b.count, 0);
 }
