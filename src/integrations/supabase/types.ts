@@ -156,6 +156,7 @@ export type Database = {
           guest_email_lookup_token: string | null
           id: string
           is_rush: boolean
+          notes: string | null
           rewards_earned: number
           rewards_redeemed: number
           rush_fee: number
@@ -169,6 +170,7 @@ export type Database = {
           total: number
           tracking_number: string | null
           updated_at: string
+          view_token: string
         }
         Insert: {
           carrier?: string | null
@@ -178,6 +180,7 @@ export type Database = {
           guest_email_lookup_token?: string | null
           id?: string
           is_rush?: boolean
+          notes?: string | null
           rewards_earned?: number
           rewards_redeemed?: number
           rush_fee?: number
@@ -191,6 +194,7 @@ export type Database = {
           total?: number
           tracking_number?: string | null
           updated_at?: string
+          view_token?: string
         }
         Update: {
           carrier?: string | null
@@ -200,6 +204,7 @@ export type Database = {
           guest_email_lookup_token?: string | null
           id?: string
           is_rush?: boolean
+          notes?: string | null
           rewards_earned?: number
           rewards_redeemed?: number
           rush_fee?: number
@@ -213,6 +218,7 @@ export type Database = {
           total?: number
           tracking_number?: string | null
           updated_at?: string
+          view_token?: string
         }
         Relationships: [
           {
