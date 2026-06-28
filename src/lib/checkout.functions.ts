@@ -237,11 +237,10 @@ export const createCheckout = createServerFn({ method: "POST" })
       quantity: l.sheet_count,
       unit_price: l.unit_price,
       line_total: l.line_total,
-      upload_id: l.upload_id ?? undefined,
       notes:
         l.design_w && l.design_h
-          ? `${l.job_qty} pieces · ${l.design_w}×${l.design_h}" · ~$${l.per_piece.toFixed(2)}/pc`
-          : `${l.length_in.toFixed(0)}" wholesaler sheet`,
+          ? `${l.job_qty} pieces · ${l.design_w}×${l.design_h}" · ~$${l.per_piece.toFixed(2)}/pc${l.upload_id ? ` · upload:${l.upload_id}` : ""}`
+          : `${l.length_in.toFixed(0)}" wholesaler sheet${l.upload_id ? ` · upload:${l.upload_id}` : ""}`,
     }));
 
     const { error: itemsErr } = await supabaseAdmin.from("order_items").insert(itemsRows);

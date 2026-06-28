@@ -39,11 +39,17 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         // -------- Idempotency layer 1: dedup by event_id --------
-        const insertEvent = await supabaseAdmin.from("webhook_events").insert({
-          event_id: event.id,
-          type: event.type,
-          payload: event as unknown as Record<string, unknown>,
-        });
+        const insertEvent = await (supabaseAdmin as unknown as {
+          from: (t: string) => {
+            insert: (row: Record<string, unknown>) => Promise<{ error: { code?: string; message?: string } | null }>;
+          };
+        })
+          .from("webhook_events")
+          .insert({
+            event_id: event.id,
+            type: event.type,
+            payload: event as unknown as Record<string, unknown>,
+          });
         if (insertEvent.error) {
           // Unique violation = already processed
           if ((insertEvent.error as { code?: string }).code === "23505") {
