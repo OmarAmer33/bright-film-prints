@@ -50,6 +50,8 @@ export const Route = createFileRoute("/")({
 
 
 function Index() {
+  const data = Route.useLoaderData();
+  const tiers = data?.tiers ?? FALLBACK_TIERS;
   return (
     <div className="min-h-screen bg-paper text-ink">
       <SiteHeader />
@@ -57,7 +59,7 @@ function Index() {
         <Hero />
         <TrustBand />
         <HowItWorks />
-        <PricingTeaser />
+        <PricingTeaser tiers={tiers} />
         <ClosingCTA />
         {/* Hidden fidelity QA — compare oklch tokens against pure hex anchors. */}
         <FidelitySwatches />
@@ -66,6 +68,7 @@ function Index() {
     </div>
   );
 }
+
 
 function Hero() {
   return (
