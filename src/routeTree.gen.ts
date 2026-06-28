@@ -17,6 +17,8 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as BuildRouteImport } from './routes/build'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ToolsUpscaleRouteImport } from './routes/tools.upscale'
+import { Route as ApiUploadsUploadRouteImport } from './routes/api/uploads.upload'
 
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
@@ -58,6 +60,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ToolsUpscaleRoute = ToolsUpscaleRouteImport.update({
+  id: '/tools/upscale',
+  path: '/tools/upscale',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadsUploadRoute = ApiUploadsUploadRouteImport.update({
+  id: '/api/uploads/upload',
+  path: '/api/uploads/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +80,8 @@ export interface FileRoutesByFullPath {
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/upload': typeof UploadRoute
+  '/tools/upscale': typeof ToolsUpscaleRoute
+  '/api/uploads/upload': typeof ApiUploadsUploadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +92,8 @@ export interface FileRoutesByTo {
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/upload': typeof UploadRoute
+  '/tools/upscale': typeof ToolsUpscaleRoute
+  '/api/uploads/upload': typeof ApiUploadsUploadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +105,8 @@ export interface FileRoutesById {
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/upload': typeof UploadRoute
+  '/tools/upscale': typeof ToolsUpscaleRoute
+  '/api/uploads/upload': typeof ApiUploadsUploadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +119,8 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/pricing'
     | '/upload'
+    | '/tools/upscale'
+    | '/api/uploads/upload'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +131,8 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/pricing'
     | '/upload'
+    | '/tools/upscale'
+    | '/api/uploads/upload'
   id:
     | '__root__'
     | '/'
@@ -121,6 +143,8 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/pricing'
     | '/upload'
+    | '/tools/upscale'
+    | '/api/uploads/upload'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +156,8 @@ export interface RootRouteChildren {
   HowItWorksRoute: typeof HowItWorksRoute
   PricingRoute: typeof PricingRoute
   UploadRoute: typeof UploadRoute
+  ToolsUpscaleRoute: typeof ToolsUpscaleRoute
+  ApiUploadsUploadRoute: typeof ApiUploadsUploadRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +218,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tools/upscale': {
+      id: '/tools/upscale'
+      path: '/tools/upscale'
+      fullPath: '/tools/upscale'
+      preLoaderRoute: typeof ToolsUpscaleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/uploads/upload': {
+      id: '/api/uploads/upload'
+      path: '/api/uploads/upload'
+      fullPath: '/api/uploads/upload'
+      preLoaderRoute: typeof ApiUploadsUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,6 +244,8 @@ const rootRouteChildren: RootRouteChildren = {
   HowItWorksRoute: HowItWorksRoute,
   PricingRoute: PricingRoute,
   UploadRoute: UploadRoute,
+  ToolsUpscaleRoute: ToolsUpscaleRoute,
+  ApiUploadsUploadRoute: ApiUploadsUploadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
