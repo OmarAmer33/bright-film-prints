@@ -18,6 +18,16 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+        console.log(
+          "[whsec check] defined:",
+          !!webhookSecret,
+          "len:",
+          webhookSecret?.length,
+          "prefix:",
+          webhookSecret?.slice(0, 9),
+        );
+
         const sig = request.headers.get("stripe-signature");
         if (!sig) {
           return new Response("Missing signature", { status: 400 });
