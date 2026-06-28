@@ -401,16 +401,19 @@ export type Database = {
       webhook_events: {
         Row: {
           event_id: string
+          payload: Json | null
           processed_at: string
           type: string
         }
         Insert: {
           event_id: string
+          payload?: Json | null
           processed_at?: string
           type: string
         }
         Update: {
           event_id?: string
+          payload?: Json | null
           processed_at?: string
           type?: string
         }
