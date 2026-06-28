@@ -1,108 +1,116 @@
-## Step 13.3 (revised) — Server fns, upload pipeline, gang-sheet auto-calculator
+## Step 13.4 (revised) — Cart, Stripe Checkout, Order Creation
 
-Builds the first revenue-config path. No Stripe, no loyalty, no admin, no live AI tools. "Sharpen this?" and upscale fee are stubs.
+Test-mode only. Three revisions folded in: tax-safe amount reconciliation, schema-qualified token default, single-environment test target.
 
-### A. Settings + storage prerequisites
+### Secrets sequencing (this turn)
 
-1. Migration: insert `settings` rows `upscale_fee = 2.49`, `bg_removal_fee = 0`. All fees read from `settings` — never hardcoded.
-2. Create private Storage bucket `uploads` via storage tool. RLS on `storage.objects` restricts to service role only; clients never touch Storage directly — they post to a server route that streams via admin client.
-3. Verify anon SELECT policies exist on `pricing_config` (active only) and `settings` (safe keys) so home + calculator can read live pricing through the server publishable client during SSR. Add narrow policies if missing.
+1. Request via `add_secret`:
+   - `STRIPE_SECRET_KEY` — you paste `sk_test_…`
+   - `VITE_STRIPE_PUBLISHABLE_KEY` — you paste `pk_test_…`
+   - `STRIPE_WEBHOOK_SECRET` — paste `whsec_placeholder` for now
+2. Build & deploy.
+3. **Single test target** (revision #3): register **production** URL in Stripe and run all test checkouts against it: `https://bright-film-prints.lovable.app/api/public/stripe.webhook`. Preview and production share the same Lovable Cloud database, so events would route to the same orders either way — but using one URL avoids any split-brain confusion and avoids re-registering at launch. (Preview URL `https://project--e9e1cf9d-5f52-4372-869d-697167934b89-dev.lovable.app/api/public/stripe.webhook` stays available as a fallback only if the production endpoint ever has issues.)
+4. Register endpoint → grab real `whsec_…` → `update_secret` swaps it in. Until then signature verification rejects every event; cart, createCheckout, redirect, success polling all still testable.
 
-### B. Quote / pricing server module (authoritative)
+### Schema additions (one migration)
 
-- `src/lib/pricing.server.ts` — pure, **no secrets, no env access** (safe to import client-side for live display):
-  - Constants `TIERS_IN = [36,60,84,120,180,240,360]`, `GAP = 0.125`, `USABLE_WIDTH = 21.875`.
-  - `computeSheet({ design_w, design_h, qty })` → `{ per_row, rows, length_in, breakdown: [{ size_ft, count }], over_width }`. Implements the spec formula exactly including auto-split over 360".
-  - `computeWholesalerSheet({ length_in })` → snap to tier.
-  - `priceBreakdown(breakdown, pricingRows)` — used server-side only.
-- `src/lib/pricing.functions.ts`:
-  - `getPricing` (public, server publishable client) → active `pricing_config` rows + relevant `settings`.
-  - `getQuote` (public). `inputValidator` accepts **only dimensions/qty** — no prices, no tier names, no per_sqft. `{ mode: 'diy'|'wholesaler', design_w?, design_h?, qty?, length_in? }`. Handler loads pricing fresh from DB and recomputes authoritative `{ breakdown, subtotal, per_piece, lines, over_width }`. Client never sends prices.
+- `webhook_events` already exists from earlier work — confirm `event_id text primary key`, `type text`, `received_at timestamptz default now()`, `payload jsonb`. Service-role only, no anon/auth grants.
+- `orders` additions:
+  - `view_token text unique not null default encode(extensions.gen_random_bytes(24), 'hex')` — **revision #2**: schema-qualified because the earlier hardening migration moved pgcrypto into the `extensions` schema; bare `gen_random_bytes` is no longer on the default search_path and would fail at insert time. `gen_random_uuid()` stays as-is (core Postgres).
+  - `stripe_checkout_session_id text unique` — for webhook→order lookup.
+- Status enum already includes `issue`; reused for amount-mismatch and signature-mismatch flagging.
 
-### C. Upload pipeline
+### Server modules
 
-- Server **route** `src/routes/api/uploads.upload.ts` (POST, multipart). `createServerFn` doesn't stream binary well; route uses `supabaseAdmin` loaded inside the handler.
-  - Accepts PNG/JPG/PDF ≤ 50MB. Validates mime + size.
-  - Streams to `supabaseAdmin.storage.from('uploads').upload('{uuid}.{ext}', ...)`.
-  - Pure-JS header parser for PNG (IHDR) and JPEG (SOF) to get pixel dims. **Fails gracefully**: any throw or unrecognized header → log + set `width_px/height_px = null`, skip DPI, still complete the upload. Never blocks a sale on a header parse miss.
-  - PDFs: accept, dims = null (DPI check is raster-only).
-  - Inserts `uploads` row (`customer_id = null` for guests, `status = 'pending'`).
-  - Returns `{ id, signed_url, width_px, height_px }` (signed URL ~24h).
-- `src/lib/uploads.functions.ts` → `getUploadSignedUrl(id)` re-mints.
+- `src/lib/stripe.server.ts` — lazy Stripe client; reads `STRIPE_SECRET_KEY` inside getter.
+- `src/lib/checkout.functions.ts`:
+  - `createCheckout` (`POST`). Input: array of `{ source, size_ft, quantity, design_w?, design_h?, job_qty?, length_in?, upload_id? }`. **No prices accepted from client.** Handler:
+    1. Loads pricing fresh from DB.
+    2. Re-runs `computeSheet` / `computeWholesalerSheet` per line; prices server-side.
+    3. **Tampering rejects independently on three checks:** recomputed `size_ft` mismatch vs any claimed, recomputed sheet `quantity` mismatch vs claimed, out-of-range dims. Server trusts only its own recomputed values.
+    4. Loads `settings` for `free_ship_threshold`, `standard_ship_fee`, `rush_fee`.
+    5. Computes `subtotal`, `shipping_fee`, `total = subtotal + shipping_fee + rush_fee` (**pre-tax** — tax is applied by Stripe on top).
+    6. Inserts `orders` row (`status='new'`, email if provided, `view_token` auto, `tax=0` placeholder — populated by webhook), inserts `order_items` with authoritative pricing.
+    7. Creates Stripe Checkout Session: **single combined line item** with `amount = order.total` (pre-tax cents) and `name = "Bright Transfers gang sheets — N items"`, `automatic_tax: { enabled: true }`, `metadata: { order_id, view_token }`, `success_url = /orders/{view_token}?checkout=success`, `cancel_url = /cart?checkout=cancel`, `customer_email` when known.
+    8. Persists `stripe_checkout_session_id` on the order.
+    9. Returns `{ url, view_token }`.
+- `src/lib/orders.functions.ts` → `getOrderForView({ token })` — public read by `view_token`; gates `clear()`.
 
-### D. Home page: live pricing read
+### Webhook route — `src/routes/api/public/stripe.webhook.ts`
 
-Replace hardcoded `tiers` in `src/routes/index.tsx > PricingTeaser` with loader-fed data:
+`POST` handler:
 
-- Add route `loader` calling `getPricing()`, filter to [3, 10, 30], keep "Best value" on 10 ft. Render via `useLoaderData`. Zero visual change.
-- Add `errorComponent` + `notFoundComponent` to satisfy boundary rule. Error fallback uses static tiers so home never blanks.
+1. Read raw body, `stripe-signature` header.
+2. `stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET!)` — invalid sig → `401`.
+3. **Idempotency layer 1:** insert into `webhook_events(event_id, type, payload)`; on unique violation, return `200` immediately.
+4. Switch `event.type === 'checkout.session.completed'`:
+   - Load order by `metadata.order_id`. Missing → log + `200`.
+   - **Amount reconciliation (revision #1):** compare `event.data.object.amount_subtotal` (Stripe's pre-tax figure, cents) against `Math.round(order.total * 100)`. **Not `amount_total`** — `amount_total` includes Stripe-calculated tax and would false-flag every taxed order at launch.
+     - Mismatch → `update orders set status='issue', notes=appended('amount_mismatch: stripe_subtotal=X, db_total=Y')`. Log. Return `200`. Do not mark paid. Do not send confirmation.
+   - On match: in a single update, write the **real charged values** back so the DB matches what the customer actually paid:
+     ```sql
+     update orders set
+       status = 'paid',
+       tax = (amount_tax_cents / 100.0),
+       total = (amount_total_cents / 100.0),
+       stripe_payment_intent_id = ...,
+       updated_at = now()
+     where id = $1 and status = 'new';
+     ```
+     Reads `event.data.object.total_details.amount_tax` and `event.data.object.amount_total`. This keeps receipts, the future admin dashboard, and refund math honest — `orders.total` post-paid equals what Stripe charged.
+   - **Layer 2 idempotency** is the `status='new'` guard — a re-delivered event finds `status='paid'` and updates zero rows.
+5. Other event types: dedupe + `200`.
 
-### E. Upload page — calculator + DPI + presets
+### Cart page (`src/routes/cart.tsx`)
 
-Rewrite `src/routes/upload.tsx` (drop `ComingSoon`):
+Replace disabled button with `Checkout` calling `useServerFn(createCheckout)` with dims/qty/source only; `window.location.assign(url)`. Optional guest email input above. Subtotal stays client-display only; real totals from the server (and may differ slightly once tax is added at Stripe Checkout).
 
-```text
-┌─────────────────────────────────────────────┐
-│ 1. Mode toggle: [DIY art] [Wholesaler sheet]│
-├─────────────────────────────────────────────┤
-│ 2. Drop zone (optional in DIY, required to  │
-│    add to cart) — PNG/JPG/PDF ≤50MB         │
-├─────────────────────────────────────────────┤
-│ 3a. DIY: width-only presets + custom        │
-│     [Left chest ~4"] [Youth ~8"]            │
-│     [Adult ~11"]    [Full back ~12"]        │
-│     [Custom]                                │
-│     All presets set TARGET WIDTH only;      │
-│     height = width × (art_h / art_w).       │
-│     Custom: enter width; height auto from   │
-│     uploaded ratio (lock toggle).           │
-│     Tag: "Placeholder widths — confirm w/Chai"│
-│ 3b. Wholesaler: length confirm input        │
-├─────────────────────────────────────────────┤
-│ 4. Quantity                                 │
-├─────────────────────────────────────────────┤
-│ 5. Live quote panel (sticky on desktop):    │
-│    - Sheet breakdown (e.g. 2× 30ft + 1× 5ft)│
-│    - Total $XX.XX                           │
-│    - ~$X.XX per piece                       │
-│    - DPI badge if raster (see thresholds)   │
-│    - Over-width error + "Rotate 90°?"       │
-├─────────────────────────────────────────────┤
-│ [Add to cart]                               │
-└─────────────────────────────────────────────┘
-```
+### Order success page — `src/routes/orders.$token.tsx`
 
-**DPI thresholds (Chai-confirm — flag in code + UI):**
+- Loader: `getOrderForView({ token: params.token })`.
+- If `?checkout=success` AND loader returned the order: `useEffect` → `useCart.getState().clear()` (gated on verified ownership, not URL).
+- Polling: 2s interval up to 30s while `status==='new'` → "Finalizing your payment…". When `paid` → confirmation + items + the now-accurate `total` (incl. tax) + `view_token` link.
+- **30s fallback:** still `new` → "Your payment went through — your confirmation will arrive by email shortly." Never an error state.
+- `status==='issue'`: "We're reviewing your payment — we'll email you shortly."
 
-- ≥ 300 → green "print-ready"
-- 150–299 → amber "should print well"
-- < 150 → amber-red **recommendation**, not a block: "May look soft on fabric — we recommend sharpening." Show "Sharpen this?" CTA → `/tools/upscale` stub. **Add to cart stays enabled.** Comment in code: thresholds soft pending Chai's machine-tested floor (DTF on fabric forgives more than paper; some shops accept ~120).
+### Reviewer additions — confirmation
 
-Components:
+| # | Note | Where in plan |
+|---|---|---|
+| 1 | Downgraded-size_ft / quantity tampering tests | checkout.functions.ts step 3; Verification §C2, §C3 |
+| 2 | Webhook amount reconciliation → status `issue` on mismatch | Webhook step 4 |
+| 3 | Stripe Tax depends on Chai's dashboard origin/registration for live | Noted; test-mode tax ≈ 0 |
+| 4 | "Payment succeeded, email coming" 30s fallback | Success page |
+| 5 | `clear()` gated on verified order ownership | Success page |
 
-- `src/components/upload/Calculator.tsx` — imports pure `computeSheet` from `pricing.server.ts` for live layout. Calls `getQuote` server fn to lock authoritative price before "Add to cart" — sends dims/qty only, never prices.
-- `src/components/upload/DropZone.tsx` — drag/drop, posts to `/api/uploads/upload`.
-- `src/components/upload/PresetPicker.tsx` — width-only presets, visible "confirm with Chai" tag.
-- Rotate-90° button swaps width/height when over-width.
+### Revisions in this pass
 
-Stub route `src/routes/tools.upscale.tsx` (uses `ComingSoon`, "lands in 13.7").
+| # | Change | Why |
+|---|---|---|
+| 1 | Reconcile on `amount_subtotal` vs `order.total`; on match write `tax` + `total` from Stripe back to DB | `amount_total` includes Stripe tax → would false-flag every real-tax order at launch; writing real values keeps DB honest with receipts |
+| 2 | `view_token` default uses `extensions.gen_random_bytes(24)` | pgcrypto lives in `extensions` schema after hardening — bare reference fails |
+| 3 | Single test target: production URL `bright-film-prints.lovable.app/api/public/stripe.webhook` | Preview + prod share DB so either works, but one URL = no split-brain + no re-register at launch |
 
-### F. Cart (client-side only this step)
+### Verification (after real `whsec_`)
 
-- `src/lib/cart-store.ts` — Zustand store persisted in `localStorage`. `addItem`, `items`, `removeItem`, `clear`, `subtotal`. Items: `{ source, size_ft, quantity, unit_price, line_total, upload_id?, preview_url? }`. Server `getQuote` is the source of truth for `unit_price` / `line_total`.
-- `src/routes/cart.tsx` — minimal list: items, qty, line totals, subtotal, **disabled** "Checkout coming in 13.4" button. Remove-item works.
+A. Happy path: card `4242 4242 4242 4242` → redirect → polls → `paid`, cart cleared, `orders.total` updated to charged amount, `orders.tax` populated.
 
-### G. Verification
+B. **Webhook replay idempotency:** Dashboard "Send test event" / resend → second `webhook_events` insert conflicts, returns 200, order stays `paid` exactly once.
 
-1. `getQuote` cases:
-   - 4×10 × 12 → per_row=5, rows=3, length=30.5 → 3 ft / **$19.99** ✓
-   - 4×10 × 20 → rows=4, length=40.625 → 5 ft / **$30.99** ✓
-   - 4×10 × 200 → length≈405 → **1× 30ft + 1× 3ft**, prices summed.
-2. Send `getQuote` payload with extra `unit_price: 0.01` fields → response ignores them, returns DB-priced quote (validator strips unknown keys).
-3. Home tiles still render 3/$19.99, 10/$54.99, 30/$139.99 from DB.
-4. Upload 1200×1200 PNG → row in `uploads`, file in Storage. At 4" print width → 300 DPI green. At 12" → 100 DPI red-recommendation, "Add to cart" still enabled.
-5. Upload corrupt PNG → dims null, no DPI badge, upload still completes.
+C. **Tampering matrix (must all reject):**
+   1. Extra `unit_price` fields → ignored, reprised.
+   2. Honest 4×10×20 (formula → 5 ft) with claimed `size_ft: 3` → rejected.
+   3. Honest dims with claimed sheet `quantity: 1` when formula needs 2 (auto-split) → rejected.
+   4. Wholesaler `length_in: 30` with claimed `size_ft: 3` → rejected.
+
+D. **Amount-mismatch flagging:** manually mutate `orders.total` between session creation and webhook arrival, replay event → status flips to `issue`, not `paid`, notes appended.
+
+E. **Tax-not-flagged check (revision #1 proof):** even in test mode with a small non-zero tax (use a Stripe tax-test product or simulate), confirm the webhook reconciles on subtotal and does **not** flip to `issue`. Confirm `orders.tax` post-paid is non-zero and `orders.total` equals `amount_total/100`.
+
+F. **30s fallback:** disable webhook delivery in Stripe, complete payment → success page shows graceful email-coming copy after 30s.
+
+G. **Cart clear gating:** `/orders/bogus-token?checkout=success` → no clear, cart preserved.
 
 ### Out of scope
 
-Stripe/order creation (13.4), loyalty (13.5), admin (13.6), live upscale/bg-removal (13.7), Antigro (13.9).
+Loyalty accrual (13.5), admin (13.6), live AI (13.7), live tax origin config (launch), live Stripe keys (launch).
