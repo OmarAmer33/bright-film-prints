@@ -11,7 +11,7 @@ import {
   computeWholesalerSheet,
   USABLE_WIDTH,
   type SheetComputation,
-} from "@/li./pricing-core";
+} from "@/lib/pricing-core";
 import { getPricing, getQuote, type PricingPayload } from "@/lib/pricing.functions";
 import { useCart } from "@/lib/cart-store";
 
