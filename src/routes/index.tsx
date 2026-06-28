@@ -4,6 +4,13 @@ import { SiteFooter } from "@/components/brand/SiteFooter";
 import { PriceTicker } from "@/components/brand/PriceTicker";
 import { GradientButton } from "@/components/brand/GradientButton";
 import { TrustRow } from "@/components/brand/TrustRow";
+import { getPricing, type PricingPayload } from "@/lib/pricing.functions";
+
+const FALLBACK_TIERS = [
+  { size_ft: 3, price: 19.99, per_sqft: 3.63 },
+  { size_ft: 10, price: 54.99, per_sqft: 3.0 },
+  { size_ft: 30, price: 139.99, per_sqft: 2.55 },
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,8 +28,26 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+  loader: async (): Promise<PricingPayload | null> => {
+    try {
+      return await getPricing();
+    } catch (e) {
+      console.error("[home loader]", e);
+      return null;
+    }
+  },
+  errorComponent: ({ reset }) => (
+    <div className="mx-auto max-w-2xl px-6 py-20 text-center">
+      <h1 className="text-3xl text-ink">Something went sideways.</h1>
+      <button onClick={reset} className="mt-6 rounded-pill bg-ink px-5 py-2 text-sm font-bold text-paper">
+        Try again
+      </button>
+    </div>
+  ),
+  notFoundComponent: () => <div className="p-20 text-center">Not found</div>,
   component: Index,
 });
+
 
 function Index() {
   return (
