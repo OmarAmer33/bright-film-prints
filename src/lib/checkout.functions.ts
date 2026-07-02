@@ -88,6 +88,32 @@ export type CreateCheckoutResult = {
   view_token: string;
 };
 
+// Resolve the logged-in customer, if any. NEVER throws — guests get null.
+async function resolveCustomerIdFromAuth(): Promise<string | null> {
+  try {
+    const req = getRequest();
+    const auth = req.headers.get("authorization");
+    if (!auth || !auth.startsWith("Bearer ")) return null;
+    const token = auth.slice("Bearer ".length).trim();
+    if (token.split(".").length !== 3) return null;
+
+    const pub = publicClient();
+    const { data: claimsRes, error: claimsErr } = await pub.auth.getClaims(token);
+    if (claimsErr || !claimsRes?.claims?.sub) return null;
+    const sub = claimsRes.claims.sub as string;
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("customers")
+      .select("id")
+      .eq("auth_user_id", sub)
+      .maybeSingle();
+    return row?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------- The function ----------------
 export const createCheckout = createServerFn({ method: "POST" })
   .inputValidator(validateCheckoutInput)
