@@ -158,6 +158,7 @@ export type Database = {
           is_rush: boolean
           notes: string | null
           rewards_earned: number
+          rewards_rate_applied: number
           rewards_redeemed: number
           rush_fee: number
           shipping_address: Json | null
@@ -182,6 +183,7 @@ export type Database = {
           is_rush?: boolean
           notes?: string | null
           rewards_earned?: number
+          rewards_rate_applied?: number
           rewards_redeemed?: number
           rush_fee?: number
           shipping_address?: Json | null
@@ -206,6 +208,7 @@ export type Database = {
           is_rush?: boolean
           notes?: string | null
           rewards_earned?: number
+          rewards_rate_applied?: number
           rewards_redeemed?: number
           rush_fee?: number
           shipping_address?: Json | null
