@@ -121,6 +121,12 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
             console.log(`[stripe.webhook] order ${order.id} already paid; no-op`);
           } else {
             console.log(`[stripe.webhook] order ${order.id} -> paid`);
+            const { error: accrualErr } = await supabaseAdmin.rpc("accrue_order_rewards", {
+              p_order_id: order.id,
+            });
+            if (accrualErr) {
+              console.error("[stripe.webhook] rewards accrual failed:", accrualErr);
+            }
           }
           return new Response("ok", { status: 200 });
         }

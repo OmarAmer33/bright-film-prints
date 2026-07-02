@@ -424,6 +424,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accrue_order_rewards: { Args: { p_order_id: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
