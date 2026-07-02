@@ -145,7 +145,15 @@ function OrderPage() {
           />
           {order.is_rush && <Row label="Rush" value={`$${order.rush_fee.toFixed(2)}`} />}
           {order.tax > 0 && <Row label="Tax" value={`$${order.tax.toFixed(2)}`} />}
+          {order.rewards_redeemed > 0 && (
+            <Row label="Rewards" value={`-$${order.rewards_redeemed.toFixed(2)}`} />
+          )}
           <Row label="Total" value={`$${order.total.toFixed(2)}`} bold />
+          {order.rewards_earned > 0 && (
+            <p className="mt-2 text-xs text-stone">
+              You earned ${order.rewards_earned.toFixed(2)} in rewards on this order.
+            </p>
+          )}
         </dl>
 
         <div className="mt-10 text-center">
