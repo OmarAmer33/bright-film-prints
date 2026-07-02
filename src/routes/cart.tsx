@@ -162,6 +162,24 @@ function CartPage() {
                   className="mt-1 w-full rounded-pill border border-line bg-paper px-4 py-2 text-sm text-ink placeholder:text-stone/60 focus:border-ember focus:outline-none"
                 />
               </div>
+              {signedIn && balance > 0 && (
+                <div className="w-full rounded-card border border-line bg-paper p-3 sm:max-w-sm">
+                  <label className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      checked={applyRewards}
+                      onChange={(e) => setApplyRewards(e.target.checked)}
+                      className="h-4 w-4 rounded border-line accent-ember"
+                    />
+                    <span>Apply my ${balance.toFixed(2)} in rewards</span>
+                  </label>
+                  {applyRewards && (
+                    <p className="mt-2 text-xs text-stone">
+                      Rewards −${balance.toFixed(2)} applied at checkout (final amount confirmed by Stripe)
+                    </p>
+                  )}
+                </div>
+              )}
               {error && (
                 <p className="text-right text-sm text-ember">{error}</p>
               )}
