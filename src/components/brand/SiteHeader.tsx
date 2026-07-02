@@ -6,11 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-store";
 
 
-
-
-
-
-
 const nav = [
   { to: "/how-it-works", label: "How it works" },
   { to: "/pricing", label: "Pricing" },
