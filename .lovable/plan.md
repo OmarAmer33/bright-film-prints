@@ -1,75 +1,45 @@
-## Test-data cleanup migration — revised (webhook_events full-clear)
+## Storage cleanup plan — uploads bucket + last DB row
 
-### `webhook_events` type breakdown (read-only, just ran)
+### Step 1 — Read-only report
 
-| type | count |
-|---|---|
-| `checkout.session.completed` | 7 |
-| `payment_intent.succeeded` | 4 |
-| `payment_intent.payment_failed` | 1 |
-| **Total** | **12** |
+**`uploads` bucket contents (8 objects, via `storage.objects`):**
 
-Confirms the rationale: the surgical `payment_intent` / `metadata.order_id` payload filter would miss the 5 `payment_intent.*` events (their object has no `payment_intent` field and no `order_id` in metadata), silently leaving test rows behind. Pre-launch Stripe sandbox → every row is a test artifact → full clear is complete and simpler.
+| name | size (B) | created_at |
+|---|---:|---|
+| 94a3a7c6-8df8-40f1-8969-13dcbda38e34.png | 114 | 2026-06-28 17:29:26 |
+| fc25b52e-ba69-4b5e-b5be-2fb07fcfa5dd.png | 18042 | 2026-06-28 18:38:00 |
+| f637384a-8b61-4912-a6a8-b1b6f076beb0.png | 18042 | 2026-06-28 22:40:06 |
+| 6a67b7be-37e2-47b1-b95c-c0a44af379a2.png | 18042 | 2026-06-28 22:44:31 |
+| 183aa2c2-6688-4b7e-9673-fc95627f18b8.png | 18042 | 2026-06-28 23:17:16 |
+| 60ac0479-02b7-41a2-b533-1db51a498b60.png | 18042 | 2026-06-28 23:21:10 |
+| cfbe5e99-ae4e-4459-84bc-f125015051c5.png | 18042 | 2026-06-29 02:38:22 |
+| f17e5d20-9854-451e-bef5-521cdfe0a513.png | 18042 | 2026-06-29 02:42:11 |
 
-### Preview counts (unchanged from prior plan)
+**`public.uploads` rows (1):**
 
-| Filter | Rows |
-|---|---|
-| `orders` matching test scope | **19** of 19 |
-| `order_items` where `order_id` ∈ test scope | **26** of 26 |
-| `uploads` referenced by those order_items' `notes` (`upload:<uuid>`) | **7** of 8 |
-| Orphan upload `c49d12f4-…` (not referenced) | **1** — left in place |
-| `webhook_events` (full clear) | **12** of 12 |
+| id | file_url | status | created_at |
+|---|---|---|---|
+| c49d12f4-e23a-4ffd-8a5d-37e9cc08a660 | 94a3a7c6-8df8-40f1-8969-13dcbda38e34.png | pending | 2026-06-28 17:29:27 |
 
-Untouched: `pricing_config`, `settings`, `customers`, `user_roles`, `builder_sessions`, `rewards_ledger`.
+**Cross-reference:** the orphan DB row's `file_url` (`94a3a7c6-….png`) matches the first bucket object. The other 7 objects are physical files whose DB rows were deleted in the previous cleanup migration (the 7 uploads referenced by test `order_items.notes`). No unexpected/foreign objects — every file is a test artifact from the pre-launch sandbox.
 
-### Revised migration SQL
+### Step 2 — Removal plan (awaiting approval; nothing runs yet)
 
-Single transaction, `RAISE NOTICE` before each delete.
+Two actions, in order:
 
-```sql
-BEGIN;
+1. **Delete all 8 objects from the `uploads` bucket via the Storage API.** Use `supabaseAdmin.storage.from('uploads').remove([...8 names...])` so the physical files are removed (a raw `DELETE FROM storage.objects` would leave orphaned blobs behind). I'll run this from a one-shot Node script using the service role key — no project files created.
+2. **Clear the last DB row:**
+   ```sql
+   DELETE FROM public.uploads;  -- expected: 1 row (c49d12f4-…)
+   ```
+   Guard: I'll re-check `SELECT count(*) FROM public.uploads` equals 1 immediately before running, and abort if not.
 
--- 1. Resolve the test order set (explicit, narrow).
-CREATE TEMP TABLE _test_orders ON COMMIT DROP AS
-SELECT id, stripe_payment_intent_id
-FROM public.orders
-WHERE stripe_payment_intent_id LIKE 'pi_test_%'
-   OR email IN ('happy@test.local','tax@test.local','mismatch@test.local','e2e@brighttransfers.test')
-   OR (email = 'guest@brighttransfers.local' AND created_at >= '2026-06-28 18:00:00+00');
+**Scope guarantees:** only the `uploads` bucket and the `public.uploads` table are touched. No other bucket, no other table, no schema changes.
 
--- 2. Resolve uploads referenced by those orders' order_items.notes (upload:<uuid>).
---    Orphan uploads (no matching notes) are intentionally NOT included.
-CREATE TEMP TABLE _test_uploads ON COMMIT DROP AS
-SELECT DISTINCT (regexp_match(oi.notes, 'upload:([0-9a-f-]{36})'))[1]::uuid AS upload_id
-FROM public.order_items oi
-WHERE oi.order_id IN (SELECT id FROM _test_orders)
-  AND oi.notes ~ 'upload:[0-9a-f-]{36}';
+### After running
 
--- 3. Preview counts before any delete.
-DO $$
-DECLARE o int; i int; u int; w int;
-BEGIN
-  SELECT count(*) INTO o FROM _test_orders;
-  SELECT count(*) INTO i FROM public.order_items WHERE order_id IN (SELECT id FROM _test_orders);
-  SELECT count(*) INTO u FROM _test_uploads;
-  SELECT count(*) INTO w FROM public.webhook_events;
-  RAISE NOTICE 'CLEANUP PREVIEW: orders=%, order_items=%, uploads=%, webhook_events(full clear)=%', o, i, u, w;
-END $$;
+Re-report:
+- `uploads` bucket object count (expect **0**)
+- `SELECT count(*) FROM public.uploads` (expect **0**)
 
--- 4. Deletes (child -> parent).
-DELETE FROM public.uploads        WHERE id       IN (SELECT upload_id FROM _test_uploads);
-DELETE FROM public.order_items    WHERE order_id IN (SELECT id        FROM _test_orders);
-DELETE FROM public.webhook_events;   -- full clear: pre-launch sandbox, all rows are test artifacts
-DELETE FROM public.orders         WHERE id       IN (SELECT id        FROM _test_orders);
-
-COMMIT;
-```
-
-### After approval, I will
-
-1. Submit the migration. `RAISE NOTICE` prints the preview counts; deletes commit in the same transaction.
-2. Re-run `SELECT count(*)` on `orders`, `order_items`, `uploads`, `webhook_events`, `pricing_config`, `settings` and paste the post-state.
-3. Storage blob cleanup (the 7 PNGs in the `uploads` bucket) stays a separate follow-up.
-
-Stopping here — approve to run, or tell me to adjust.
+Stopping here for your approval.
