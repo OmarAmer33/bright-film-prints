@@ -1,6 +1,12 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import type { Session } from "@supabase/supabase-js";
 import logoAsset from "@/assets/bright-transfers-logo.png.asset.json";
+import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-store";
+
+
+
 
 
 
