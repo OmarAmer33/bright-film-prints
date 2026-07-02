@@ -81,3 +81,21 @@ function CartLink() {
   );
 }
 
+function AccountNavLink() {
+  const [session, setSession] = useState<Session | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  return (
+    <Link
+      to="/account"
+      className="text-sm font-medium text-ink/70 transition-colors hover:text-ink"
+      activeProps={{ className: "text-ink" }}
+    >
+      {session ? "Account" : "Sign in"}
+    </Link>
+  );
+}
+
