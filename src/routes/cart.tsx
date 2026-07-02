@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
 import { useCart } from "@/lib/cart-store";
-import { createCheckout } from "@/lib/checkout.functions";
+import { createCheckout, type CheckoutInput } from "@/lib/checkout.functions";
 import { describeBreakdown } from "@/lib/pricing-core";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -67,7 +67,7 @@ function CartPage() {
     try {
       // ONE payload entry per job. Server reprices each job exactly once from
       // its dimensions and compares against claimed_breakdown for tamper checks.
-      const payload: Parameters<typeof checkoutFn>[0]["data"] = {
+      const payload: CheckoutInput = {
         email: email.trim() || undefined,
         items: items.map((i) => ({
           source: i.source,
