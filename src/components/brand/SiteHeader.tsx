@@ -47,6 +47,7 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          <AccountNavLink />
         </nav>
 
         <div className="flex items-center gap-2">
