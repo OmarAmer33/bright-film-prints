@@ -1,45 +1,65 @@
-## Storage cleanup plan — uploads bucket + last DB row
+## Step 13.5a — associate checkout orders with the logged-in customer
 
-### Step 1 — Read-only report
+Scope: `src/lib/checkout.functions.ts` only. No webhook, schema, or migration changes. Guests remain unaffected; checkout never throws on missing/invalid auth.
 
-**`uploads` bucket contents (8 objects, via `storage.objects`):**
+### Change 1 — add non-throwing helper
 
-| name | size (B) | created_at |
-|---|---:|---|
-| 94a3a7c6-8df8-40f1-8969-13dcbda38e34.png | 114 | 2026-06-28 17:29:26 |
-| fc25b52e-ba69-4b5e-b5be-2fb07fcfa5dd.png | 18042 | 2026-06-28 18:38:00 |
-| f637384a-8b61-4912-a6a8-b1b6f076beb0.png | 18042 | 2026-06-28 22:40:06 |
-| 6a67b7be-37e2-47b1-b95c-c0a44af379a2.png | 18042 | 2026-06-28 22:44:31 |
-| 183aa2c2-6688-4b7e-9673-fc95627f18b8.png | 18042 | 2026-06-28 23:17:16 |
-| 60ac0479-02b7-41a2-b533-1db51a498b60.png | 18042 | 2026-06-28 23:21:10 |
-| cfbe5e99-ae4e-4459-84bc-f125015051c5.png | 18042 | 2026-06-29 02:38:22 |
-| f17e5d20-9854-451e-bef5-521cdfe0a513.png | 18042 | 2026-06-29 02:42:11 |
+Add above `createCheckout`:
 
-**`public.uploads` rows (1):**
+```ts
+import { getRequest } from "@tanstack/react-start/server";
 
-| id | file_url | status | created_at |
-|---|---|---|---|
-| c49d12f4-e23a-4ffd-8a5d-37e9cc08a660 | 94a3a7c6-8df8-40f1-8969-13dcbda38e34.png | pending | 2026-06-28 17:29:27 |
+async function resolveCustomerIdFromAuth(): Promise<string | null> {
+  try {
+    const req = getRequest();
+    const auth = req.headers.get("authorization");
+    if (!auth || !auth.startsWith("Bearer ")) return null;
+    const token = auth.slice("Bearer ".length).trim();
+    if (token.split(".").length !== 3) return null;
 
-**Cross-reference:** the orphan DB row's `file_url` (`94a3a7c6-….png`) matches the first bucket object. The other 7 objects are physical files whose DB rows were deleted in the previous cleanup migration (the 7 uploads referenced by test `order_items.notes`). No unexpected/foreign objects — every file is a test artifact from the pre-launch sandbox.
+    const pub = publicClient();
+    const { data: claimsRes, error: claimsErr } = await pub.auth.getClaims(token);
+    if (claimsErr || !claimsRes?.claims?.sub) return null;
+    const sub = claimsRes.claims.sub as string;
 
-### Step 2 — Removal plan (awaiting approval; nothing runs yet)
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("customers")
+      .select("id")
+      .eq("auth_user_id", sub)
+      .maybeSingle();
+    return row?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+```
 
-Two actions, in order:
+Notes:
+- `publicClient()` (already in this file) returns a SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY client — reused for `auth.getClaims(token)`.
+- Every failure path (no header, wrong scheme, non-JWT-shaped token, `getClaims` error, no matching `customers` row, any thrown error) returns `null` → guest.
+- `customer_id` is derived only from the verified token; no client input is trusted.
 
-1. **Delete all 8 objects from the `uploads` bucket via the Storage API.** Use `supabaseAdmin.storage.from('uploads').remove([...8 names...])` so the physical files are removed (a raw `DELETE FROM storage.objects` would leave orphaned blobs behind). I'll run this from a one-shot Node script using the service role key — no project files created.
-2. **Clear the last DB row:**
-   ```sql
-   DELETE FROM public.uploads;  -- expected: 1 row (c49d12f4-…)
-   ```
-   Guard: I'll re-check `SELECT count(*) FROM public.uploads` equals 1 immediately before running, and abort if not.
+### Change 2 — set `customer_id` on the order insert
 
-**Scope guarantees:** only the `uploads` bucket and the `public.uploads` table are touched. No other bucket, no other table, no schema changes.
+Inside the `createCheckout` handler, immediately before the `supabaseAdmin.from("orders").insert(...)` call, add:
 
-### After running
+```ts
+const resolvedCustomerId = await resolveCustomerIdFromAuth();
+```
 
-Re-report:
-- `uploads` bucket object count (expect **0**)
-- `SELECT count(*) FROM public.uploads` (expect **0**)
+Then add one field to the insert object:
 
-Stopping here for your approval.
+```ts
+customer_id: resolvedCustomerId,
+```
+
+Nothing else in the insert or downstream logic changes. No changes to `CheckoutInput` / `CheckoutLineInput` types.
+
+### Not touched
+- Pricing/quote logic, `claimed_breakdown` validation, Stripe session creation, `metadata.order_id`, email handling, `order_items` rows, webhook, DB schema, migrations, and the `requireSupabaseAuth` middleware (deliberately NOT applied — would break guest checkout).
+
+### After the edit
+1. Show the full diff of `src/lib/checkout.functions.ts`.
+2. Confirm no other files changed.
+3. Publish.

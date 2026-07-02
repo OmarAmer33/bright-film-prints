@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import {
@@ -86,6 +87,32 @@ export type CreateCheckoutResult = {
   url: string;
   view_token: string;
 };
+
+// Resolve the logged-in customer, if any. NEVER throws — guests get null.
+async function resolveCustomerIdFromAuth(): Promise<string | null> {
+  try {
+    const req = getRequest();
+    const auth = req.headers.get("authorization");
+    if (!auth || !auth.startsWith("Bearer ")) return null;
+    const token = auth.slice("Bearer ".length).trim();
+    if (token.split(".").length !== 3) return null;
+
+    const pub = publicClient();
+    const { data: claimsRes, error: claimsErr } = await pub.auth.getClaims(token);
+    if (claimsErr || !claimsRes?.claims?.sub) return null;
+    const sub = claimsRes.claims.sub as string;
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("customers")
+      .select("id")
+      .eq("auth_user_id", sub)
+      .maybeSingle();
+    return row?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // ---------------- The function ----------------
 export const createCheckout = createServerFn({ method: "POST" })
@@ -214,6 +241,8 @@ export const createCheckout = createServerFn({ method: "POST" })
     // ---- Insert order + items (service role) ----
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const resolvedCustomerId = await resolveCustomerIdFromAuth();
+
     const { data: orderRow, error: orderErr } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -225,6 +254,7 @@ export const createCheckout = createServerFn({ method: "POST" })
         tax: 0, // populated by webhook on paid
         total,
         is_rush: Boolean(data.is_rush),
+        customer_id: resolvedCustomerId,
       })
       .select("id, view_token")
       .single();
