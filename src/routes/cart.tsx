@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { SiteHeader } from "@/components/brand/SiteHeader";
@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/brand/SiteFooter";
 import { useCart } from "@/lib/cart-store";
 import { createCheckout } from "@/lib/checkout.functions";
 import { describeBreakdown } from "@/lib/pricing-core";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -26,6 +27,39 @@ function CartPage() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [applyRewards, setApplyRewards] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadFor = async (userId: string | undefined) => {
+      if (!userId) {
+        if (!cancelled) {
+          setSignedIn(false);
+          setBalance(0);
+          setApplyRewards(false);
+        }
+        return;
+      }
+      const { data: row } = await supabase
+        .from("customers")
+        .select("rewards_balance")
+        .eq("auth_user_id", userId)
+        .maybeSingle();
+      if (cancelled) return;
+      setSignedIn(true);
+      setBalance(Number(row?.rewards_balance ?? 0));
+    };
+    supabase.auth.getSession().then(({ data }) => loadFor(data.session?.user.id));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      loadFor(session?.user.id);
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   const onCheckout = async () => {
     setError(null);
@@ -33,7 +67,7 @@ function CartPage() {
     try {
       // ONE payload entry per job. Server reprices each job exactly once from
       // its dimensions and compares against claimed_breakdown for tamper checks.
-      const payload = {
+      const payload: Parameters<typeof checkoutFn>[0]["data"] = {
         email: email.trim() || undefined,
         items: items.map((i) => ({
           source: i.source,
@@ -47,6 +81,7 @@ function CartPage() {
             count: b.count,
           })),
         })),
+        ...(applyRewards && balance > 0 ? { redeem_requested: balance } : {}),
       };
       const result = await checkoutFn({ data: payload });
       window.location.assign(result.url);
