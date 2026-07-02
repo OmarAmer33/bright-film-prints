@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/brand/SiteHeader";
@@ -150,9 +151,16 @@ function OrderPage() {
           )}
           <Row label="Total" value={`$${order.total.toFixed(2)}`} bold />
           {order.rewards_earned > 0 && (
-            <p className="mt-2 text-xs text-stone">
-              You earned ${order.rewards_earned.toFixed(2)} in rewards on this order.
-            </p>
+            <div className="mt-4 flex items-center gap-2.5 rounded-card border border-gold/50 bg-dawn px-4 py-3">
+              <Sparkles className="h-5 w-5 shrink-0 text-sun" aria-hidden />
+              <p className="text-sm font-medium text-ink">
+                You earned{" "}
+                <span className="bg-clip-text font-mono font-bold text-transparent text-gradient-accent">
+                  ${order.rewards_earned.toFixed(2)}
+                </span>{" "}
+                in rewards toward your next order
+              </p>
+            </div>
           )}
         </dl>
 
