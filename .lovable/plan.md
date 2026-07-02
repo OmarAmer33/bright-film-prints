@@ -1,36 +1,21 @@
-## Frontend-only fix to `src/components/brand/SiteHeader.tsx`
+## Step 13.5d — Redemption RPC layer (backend only)
 
-Single-file change. No backend, routing, auth-logic, cart, checkout, or token changes.
+Single new migration. No code, UI, RLS, checkout, webhook, or cart changes. Types regenerate automatically after approval.
 
-### 1. One shared auth listener
-- Add a small `useAuthSession()` helper at the bottom of the file: on mount call `supabase.auth.getSession()`, subscribe with `supabase.auth.onAuthStateChange`, unsubscribe on unmount. Returns `session`.
-- Call it once inside `SiteHeader` and derive `const isSignedIn = !!session`.
-- Remove the `useEffect`/subscription currently inside `AccountNavLink`. `AccountNavLink` becomes a pure presentational component that receives `isSignedIn` as a prop (used by the desktop `<nav>`). The mobile menu renders its own inline account row using the same `isSignedIn`.
+### Migration contents (exact SQL as provided)
 
-### 2. Desktop account affordance (unchanged breakpoint, new visuals)
-- Signed OUT → outlined pill: `inline-flex items-center gap-1.5 rounded-pill border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-ink/5` with `<LogIn className="h-4 w-4" />` before "Sign in". Links to `/account`.
-- Signed IN → `inline-flex items-center gap-1.5 text-sm font-medium text-ink` with `<CircleUserRound className="h-4 w-4 text-sun" />` before "Account". Links to `/account`.
-- Both use `lucide-react` icons already available in the project.
+1. **Schema:** `alter table public.orders add column if not exists rewards_redeemed_committed boolean not null default false;` — idempotency gate for redemption commits.
 
-### 3. Mobile menu (below md)
-- Add a hamburger `<SheetTrigger asChild>` button placed inside the right-hand action cluster, before `CartLink`, with `className="md:hidden ..."` matching the existing pill/outline styling (`inline-flex items-center justify-center rounded-pill border border-line bg-paper p-2 text-ink`), `aria-label="Open menu"`, containing `<Menu className="h-5 w-5" />`.
-- Imports from `@/components/ui/sheet`: `Sheet, SheetTrigger, SheetContent, SheetClose, SheetHeader, SheetTitle`.
-- `<SheetContent side="right" className="bg-paper">` contains:
-  - `SheetHeader` with `SheetTitle` "Menu" (font-display text-ink).
-  - Account row at top:
-    - Signed IN: `SheetClose asChild` → `<Link to="/account">` styled as a pill row with `CircleUserRound` (sun accent) + "Account".
-    - Signed OUT: `SheetClose asChild` → `<Link to="/account">` styled as filled `bg-ink text-paper rounded-pill px-4 py-2 font-bold` with `LogIn` icon + "Sign in".
-  - A vertical stacked list of the existing `nav` array (How it works, Pricing, FAQ, About, Contact) — each wrapped in `SheetClose asChild` with `<Link>` using `text-base font-medium text-ink/80 hover:text-ink` and a divider line above (`border-t border-line/70`).
-- Sheet open state is controlled by a local `useState` so `SheetClose` closes on navigation.
+2. **`public.apply_rewards_delta(p_customer uuid, p_delta numeric)`** — new SECURITY DEFINER function; the only mutator of `customers.rewards_balance`. `revoke all` from public/anon/authenticated; `grant execute` to `service_role`.
 
-### 4. Untouched
-- Logo/home link, `CartLink`, "Start order" pill (all visible at every breakpoint).
-- Desktop `<nav>` remains `hidden md:flex` with the same primary links; only `AccountNavLink` visuals change per step 2.
-- No new colors/fonts introduced — only existing tokens (`paper`, `ink`, `line`, `sun`, `ember`, `rounded-pill`, `font-display`, `font-medium`).
+3. **`public.accrue_order_rewards(p_order_id uuid)`** — replaced with identical behavior; only the final balance update is swapped from an inline `UPDATE customers` to `perform public.apply_rewards_delta(v_customer, v_earn)`. Same idempotency guard (`rewards_earned = 0 AND status = 'paid' AND customer_id IS NOT NULL`), same rate stamp, same 'earn' ledger insert. Same revoke/grant.
 
-### Accessibility
-- Hamburger has `aria-label="Open menu"`.
-- Sheet always renders `SheetTitle` ("Menu") for screen readers.
+4. **`public.commit_order_redemption(p_order_id uuid, p_redeem numeric)`** — new SECURITY DEFINER function. Commit-on-paid, idempotent via atomic `rewards_redeemed_committed` flip. Row-locks the customer, debits `least(p_redeem, balance)`, inserts a `'redeem'` ledger row with negative amount, calls `apply_rewards_delta(-v_debit)`. Flags `status = 'issue'` with a `redeem_shortfall` note when the balance can't cover the full request. Same revoke/grant.
 
-### After building
-- Publish.
+All three functions: `language plpgsql`, `security definer`, `set search_path = public, extensions`, executable by `service_role` only.
+
+### Untouched
+Checkout, Stripe webhook, cart store, all UI/routes, RLS policies, `orders` RLS, `rewards_ledger` schema, `customers` schema (aside from the balance write path), settings, types (regenerated, never hand-edited).
+
+### After approval
+Publish.

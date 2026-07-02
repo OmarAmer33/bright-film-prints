@@ -160,6 +160,7 @@ export type Database = {
           rewards_earned: number
           rewards_rate_applied: number
           rewards_redeemed: number
+          rewards_redeemed_committed: boolean
           rush_fee: number
           shipping_address: Json | null
           shipping_fee: number
@@ -185,6 +186,7 @@ export type Database = {
           rewards_earned?: number
           rewards_rate_applied?: number
           rewards_redeemed?: number
+          rewards_redeemed_committed?: boolean
           rush_fee?: number
           shipping_address?: Json | null
           shipping_fee?: number
@@ -210,6 +212,7 @@ export type Database = {
           rewards_earned?: number
           rewards_rate_applied?: number
           rewards_redeemed?: number
+          rewards_redeemed_committed?: boolean
           rush_fee?: number
           shipping_address?: Json | null
           shipping_fee?: number
@@ -428,6 +431,14 @@ export type Database = {
     }
     Functions: {
       accrue_order_rewards: { Args: { p_order_id: string }; Returns: undefined }
+      apply_rewards_delta: {
+        Args: { p_customer: string; p_delta: number }
+        Returns: undefined
+      }
+      commit_order_redemption: {
+        Args: { p_order_id: string; p_redeem: number }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
