@@ -31,6 +31,7 @@ export type CheckoutInput = {
   items: CheckoutLineInput[];
   email?: string;
   is_rush?: boolean;
+  redeem_requested?: number;
 };
 
 function numOrUndef(v: unknown): number | undefined {
@@ -71,7 +72,9 @@ function validateCheckoutInput(raw: unknown): CheckoutInput {
   });
   const email = typeof r.email === "string" && r.email.includes("@") ? r.email.trim() : undefined;
   const is_rush = Boolean(r.is_rush);
-  return { items, email, is_rush };
+  const redeemRaw = numOrUndef(r.redeem_requested);
+  const redeem_requested = redeemRaw !== undefined && redeemRaw > 0 ? redeemRaw : undefined;
+  return { items, email, is_rush, redeem_requested };
 }
 
 // ---------------- Server publishable client (public reads) ----------------
@@ -291,6 +294,40 @@ export const createCheckout = createServerFn({ method: "POST" })
       (s, j) => s + j.sheets.reduce((ss, sh) => ss + sh.count, 0),
       0,
     );
+
+    // ---- Optional rewards redemption (logged-in only; server authoritative) ----
+    let redeemAmount = 0;
+    let couponId: string | null = null;
+    if (resolvedCustomerId && data.redeem_requested && data.redeem_requested > 0) {
+      const { data: balRow } = await supabaseAdmin
+        .from("customers")
+        .select("rewards_balance")
+        .eq("id", resolvedCustomerId)
+        .maybeSingle();
+      const bal = Number(balRow?.rewards_balance ?? 0);
+      const candidate = Math.min(data.redeem_requested, bal, total - 0.5);
+      const redeem = Number(candidate.toFixed(2));
+      if (redeem >= 0.01) {
+        const coupon = await stripe.coupons.create({
+          amount_off: Math.round(redeem * 100),
+          currency: "usd",
+          duration: "once",
+          max_redemptions: 1,
+          name: "Bright rewards",
+        });
+        redeemAmount = redeem;
+        couponId = coupon.id;
+      }
+    }
+
+    const sessionMetadata: Record<string, string> = {
+      order_id: orderRow.id,
+      view_token: orderRow.view_token,
+    };
+    if (redeemAmount > 0) {
+      sessionMetadata.rewards_redeemed = String(redeemAmount);
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -314,10 +351,8 @@ export const createCheckout = createServerFn({ method: "POST" })
         },
       ],
       automatic_tax: { enabled: true },
-      metadata: {
-        order_id: orderRow.id,
-        view_token: orderRow.view_token,
-      },
+      ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
+      metadata: sessionMetadata,
       success_url: `${origin}/orders/${orderRow.view_token}?checkout=success`,
       cancel_url: `${origin}/cart?checkout=cancel`,
     });

@@ -127,6 +127,14 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
             if (accrualErr) {
               console.error("[stripe.webhook] rewards accrual failed:", accrualErr);
             }
+            const redeem = Number(session.metadata?.rewards_redeemed ?? 0);
+            if (redeem > 0) {
+              const { error: redeemErr } = await supabaseAdmin.rpc("commit_order_redemption", {
+                p_order_id: order.id,
+                p_redeem: redeem,
+              });
+              if (redeemErr) console.error("[stripe.webhook] redemption commit failed:", redeemErr);
+            }
           }
           return new Response("ok", { status: 200 });
         }
