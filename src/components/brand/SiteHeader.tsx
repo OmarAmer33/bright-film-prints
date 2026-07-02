@@ -1,8 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import type { Session } from "@supabase/supabase-js";
 import logoAsset from "@/assets/bright-transfers-logo.png.asset.json";
+import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-store";
-
-
 
 
 const nav = [
@@ -11,7 +12,6 @@ const nav = [
   { to: "/faq", label: "FAQ" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
-  { to: "/account", label: "Account" },
 ] as const;
 
 export function SiteHeader() {
@@ -42,6 +42,7 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          <AccountNavLink />
         </nav>
 
         <div className="flex items-center gap-2">
@@ -72,6 +73,24 @@ function CartLink() {
           {count}
         </span>
       )}
+    </Link>
+  );
+}
+
+function AccountNavLink() {
+  const [session, setSession] = useState<Session | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  return (
+    <Link
+      to="/account"
+      className="text-sm font-medium text-ink/70 transition-colors hover:text-ink"
+      activeProps={{ className: "text-ink" }}
+    >
+      {session ? "Account" : "Sign in"}
     </Link>
   );
 }
