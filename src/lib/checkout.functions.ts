@@ -241,6 +241,8 @@ export const createCheckout = createServerFn({ method: "POST" })
     // ---- Insert order + items (service role) ----
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const resolvedCustomerId = await resolveCustomerIdFromAuth();
+
     const { data: orderRow, error: orderErr } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -252,6 +254,7 @@ export const createCheckout = createServerFn({ method: "POST" })
         tax: 0, // populated by webhook on paid
         total,
         is_rush: Boolean(data.is_rush),
+        customer_id: resolvedCustomerId,
       })
       .select("id, view_token")
       .single();
