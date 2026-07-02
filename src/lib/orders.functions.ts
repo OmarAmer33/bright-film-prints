@@ -10,6 +10,8 @@ export type OrderForView = {
   rush_fee: number;
   tax: number;
   total: number;
+  rewards_redeemed: number;
+  rewards_earned: number;
   is_rush: boolean;
   created_at: string;
   items: Array<{
@@ -41,7 +43,7 @@ export const getOrderForView = createServerFn({ method: "POST" })
     const { data: order, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, view_token, status, email, subtotal, shipping_fee, rush_fee, tax, total, is_rush, created_at",
+        "id, view_token, status, email, subtotal, shipping_fee, rush_fee, tax, total, rewards_redeemed, rewards_earned, is_rush, created_at",
       )
       .eq("view_token", data.token)
       .maybeSingle();
@@ -62,6 +64,8 @@ export const getOrderForView = createServerFn({ method: "POST" })
       rush_fee: Number(order.rush_fee),
       tax: Number(order.tax),
       total: Number(order.total),
+      rewards_redeemed: Number(order.rewards_redeemed),
+      rewards_earned: Number(order.rewards_earned),
       items: (items ?? []).map((i) => ({
         id: i.id,
         source: i.source,
