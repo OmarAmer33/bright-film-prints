@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/brand/SiteHeader";
