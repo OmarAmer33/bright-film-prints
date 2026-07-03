@@ -1,31 +1,17 @@
-Two surgical changes to the checkout → paid flow so we capture the customer's shipping address.
+## Grant admin role to omar@priklpay.com
 
-Technical changes
-1. src/lib/checkout.functions.ts
-   - In the `stripe.checkout.sessions.create({ ... })` call, add the top-level property `shipping_address_collection: { allowed_countries: ["US"] }` immediately after `automatic_tax: { enabled: true }`.
-   - Leave the single line item, discounts, metadata, success_url, and cancel_url exactly as they are. Do not touch pricing or reconciliation.
+STEP 1 (done, read-only):
+- auth_user_id: `cd6a0ad9-1458-48cd-ac5c-17a26c5221d5`
+- customer_id: `f1ac3f53-7077-400c-91cd-927be18f6d84`
+- current roles: `{customer}`
 
-2. src/routes/api/public/stripe.webhook.ts
-   - In the `checkout.session.completed` branch, immediately before the `.update({ ... })` that sets `status: "paid"` and is gated on `.eq("status", "new")`, derive a robust shipping-address object:
-     ```
-     const ci = (session as any).collected_information;
-     const shipDetails =
-       ci?.shipping_details ??
-       (session as any).shipping_details ??
-       (session.customer_details
-         ? { name: session.customer_details.name, address: session.customer_details.address }
-         : null);
-     const shippingAddress = shipDetails
-       ? { name: shipDetails.name ?? null, address: shipDetails.address ?? null }
-       : null;
-     ```
-   - Add exactly one field, `shipping_address: shippingAddress`, to that same `.update({...})` object.
-   - Leave amount reconciliation, the `accrue_order_rewards` RPC call, and the `commit_order_redemption` call untouched. Keep the `.eq("status", "new")` gate.
+STEP 2 — insert admin role (idempotent) via the insert tool:
+```sql
+insert into user_roles (user_id, role)
+select id, 'admin' from auth.users where email = 'omar@priklpay.com'
+on conflict (user_id, role) do nothing;
+```
 
-Verification
-- Build the app to confirm both files compile and TypeScript is happy.
-- Publish the current project.
+STEP 3 — re-run STEP 1 query and paste result. Expected roles: `{customer, admin}`.
 
-Out of scope
-- No pricing, tax, shipping fee, rewards, idempotency, reconciliation, display copy, or UI changes.
-- No database schema changes are needed; `orders.shipping_address` already exists as jsonb.
+No code or schema changes.
