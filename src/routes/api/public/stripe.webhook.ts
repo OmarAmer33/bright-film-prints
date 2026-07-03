@@ -102,6 +102,17 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
               ? session.payment_intent
               : session.payment_intent?.id;
 
+          const ci = (session as any).collected_information;
+          const shipDetails =
+            ci?.shipping_details ??
+            (session as any).shipping_details ??
+            (session.customer_details
+              ? { name: session.customer_details.name, address: session.customer_details.address }
+              : null);
+          const shippingAddress = shipDetails
+            ? { name: shipDetails.name ?? null, address: shipDetails.address ?? null }
+            : null;
+
           const { data: updated, error: updateErr } = await supabaseAdmin
             .from("orders")
             .update({
@@ -109,6 +120,7 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
               tax: stripeTaxCents / 100,
               total: stripeTotalCents / 100,
               stripe_payment_intent_id: paymentIntentId ?? null,
+              shipping_address: shippingAddress,
             })
             .eq("id", order.id)
             .eq("status", "new") // idempotency layer 2

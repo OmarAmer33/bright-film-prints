@@ -351,6 +351,7 @@ export const createCheckout = createServerFn({ method: "POST" })
         },
       ],
       automatic_tax: { enabled: true },
+      shipping_address_collection: { allowed_countries: ["US"] },
       ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
       metadata: sessionMetadata,
       success_url: `${origin}/orders/${orderRow.view_token}?checkout=success`,
