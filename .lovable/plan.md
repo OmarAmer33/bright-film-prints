@@ -1,67 +1,21 @@
-## Admin gate: two new files, no other changes
+Add a visibility-only admin nav link to the header, gated by a new non-throwing server function. No changes to existing `/admin` enforcement or publish.
 
-### FILE 1 (new) — `src/lib/admin.functions.ts`
+### Files to change
 
-Server function `requireAdmin` that mirrors the auth mechanics of `resolveCustomerIdFromAuth` but throws instead of returning null, and checks `user_roles` instead of `customers`.
+1. `src/lib/admin.functions.ts` — append `getIsAdmin` below `requireAdmin`.
+2. `src/components/brand/SiteHeader.tsx` — add admin-detection state and render the Admin link in desktop nav and mobile Sheet.
 
-```ts
-import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+### Technical details
 
-function publicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
-}
+**`src/lib/admin.functions.ts`**
 
-export const requireAdmin = createServerFn({ method: "GET" }).handler(async () => {
-  const req = getRequest();
-  const auth = req.headers.get("authorization");
-  if (!auth || !auth.startsWith("Bearer ")) throw new Error("Not authorized");
-  const token = auth.slice("Bearer ".length).trim();
-  if (token.split(".").length !== 3) throw new Error("Not authorized");
+Add a new exported `createServerFn` named `getIsAdmin` (method: GET). It mirrors `requireAdmin`'s token extraction and claim lookup via the existing `publicClient()` helper, but never throws. On any missing token, malformed JWT, claim error, or absent `user_roles` row, return `{ isAdmin: false }`. On success, return `{ isAdmin: true }`. It reuses `publicClient()` and dynamically imports `supabaseAdmin` exactly like `requireAdmin`.
 
-  const pub = publicClient();
-  const { data: claimsRes, error: claimsErr } = await pub.auth.getClaims(token);
-  if (claimsErr || !claimsRes?.claims?.sub) throw new Error("Not authorized");
-  const sub = claimsRes.claims.sub as string;
-  const email = (claimsRes.claims.email as string | undefined) ?? null;
+**`src/components/brand/SiteHeader.tsx`**
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: row, error } = await supabaseAdmin
-    .from("user_roles")
-    .select("user_id")
-    .eq("user_id", sub)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (error || !row) throw new Error("Not authorized");
+- Imports: add `useServerFn` from `@tanstack/react-start`, `getIsAdmin` from `@/lib/admin.functions`, and `ShieldCheck` to the `lucide-react` import list.
+- After `const isSignedIn = !!session;`, add `useState(false)` for `isAdmin`, `useServerFn(getIsAdmin)`, and a `useEffect` that calls `getIsAdminFn()` when `session` exists and updates `isAdmin` (cleaned up with a `mounted` flag).
+- Desktop nav: render the Admin `<Link>` immediately after `<AccountNavLink isSignedIn={isSignedIn} />` when `isAdmin` is true, using the same style classes as Account but with `ShieldCheck` and "Admin" label.
+- Mobile Sheet: inside the `isSignedIn ?` branch, render the Admin `<SheetClose asChild>` link immediately after the Account `<SheetClose>` link when `isAdmin` is true, using the matching mobile style classes.
 
-  return { ok: true as const, email };
-});
-```
-
-Every failure path throws `"Not authorized"`; success is the only route to `ok: true`.
-
-### FILE 2 (new) — `src/routes/admin.tsx`
-
-Client-rendered route at `/admin`. Session UX mirrors `src/routes/account.tsx` (SiteHeader/SiteFooter, `supabase.auth.getSession` + `onAuthStateChange`, `head()` with `robots: noindex, nofollow`). Invocation uses `useServerFn(requireAdmin)` — same pattern `cart.tsx` uses for `createCheckout` — so the Bearer attacher middleware forwards the token unchanged.
-
-State machine:
-- session unresolved → "Loading…" card
-- no session → "Admin access requires sign-in." card with `<Link to="/account">`
-- session present → call `requireAdmin()` in an effect; on resolve render `<h1>Admin</h1>` + "Access granted — signed in as {email}."; on throw render "Not authorized — this account does not have admin access." card with `<Link to="/">` back to home
-
-No order/customer data fetched or rendered. No other files touched.
-
-### Verification
-
-After build, hit `/admin`:
-- Signed out → sign-in card
-- Signed in as non-admin → not-authorized card (server throws)
-- Signed in as `omar@priklpay.com` (admin) → "Access granted" + email
-
-No publish.
+No other files or logic are touched. The `requireAdmin` function and `/admin` route remain unchanged; server-side enforcement stays intact and the nav link is purely visibility.

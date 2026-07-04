@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Session } from "@supabase/supabase-js";
-import { CircleUserRound, LogIn, Menu } from "lucide-react";
+import { CircleUserRound, LogIn, Menu, ShieldCheck } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import logoAsset from "@/assets/bright-transfers-logo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-store";
+import { getIsAdmin } from "@/lib/admin.functions";
 import {
   Sheet,
   SheetClose,
@@ -35,6 +37,16 @@ function useAuthSession() {
 export function SiteHeader() {
   const session = useAuthSession();
   const isSignedIn = !!session;
+  const [isAdmin, setIsAdmin] = useState(false);
+  const getIsAdminFn = useServerFn(getIsAdmin);
+
+  useEffect(() => {
+    if (!session) { setIsAdmin(false); return; }
+    let mounted = true;
+    getIsAdminFn().then((r) => { if (mounted) setIsAdmin(r.isAdmin); }).catch(() => { if (mounted) setIsAdmin(false); });
+    return () => { mounted = false; };
+  }, [session, getIsAdminFn]);
+
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -64,6 +76,12 @@ export function SiteHeader() {
             </Link>
           ))}
           <AccountNavLink isSignedIn={isSignedIn} />
+          {isAdmin && (
+            <Link to="/admin" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink" activeProps={{ className: "text-ink" }}>
+              <ShieldCheck className="h-4 w-4 text-sun" />
+              Admin
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -90,15 +108,25 @@ export function SiteHeader() {
               </SheetHeader>
               <div className="mt-4 flex flex-col gap-1">
                 {isSignedIn ? (
-                  <SheetClose asChild>
-                    <Link
-                      to="/account"
-                      className="inline-flex items-center gap-2 rounded-pill border border-line px-4 py-2.5 text-sm font-medium text-ink"
-                    >
-                      <CircleUserRound className="h-5 w-5 text-sun" />
-                      Account
-                    </Link>
-                  </SheetClose>
+                  <>
+                    <SheetClose asChild>
+                      <Link
+                        to="/account"
+                        className="inline-flex items-center gap-2 rounded-pill border border-line px-4 py-2.5 text-sm font-medium text-ink"
+                      >
+                        <CircleUserRound className="h-5 w-5 text-sun" />
+                        Account
+                      </Link>
+                    </SheetClose>
+                    {isAdmin && (
+                      <SheetClose asChild>
+                        <Link to="/admin" className="inline-flex items-center gap-2 rounded-pill border border-line px-4 py-2.5 text-sm font-medium text-ink">
+                          <ShieldCheck className="h-5 w-5 text-sun" />
+                          Admin
+                        </Link>
+                      </SheetClose>
+                    )}
+                  </>
                 ) : (
                   <SheetClose asChild>
                     <Link
