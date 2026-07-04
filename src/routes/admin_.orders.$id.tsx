@@ -139,7 +139,10 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
           <h1 className="font-mono text-xl text-ink">{order.id}</h1>
           <StatusPill status={order.status} />
         </div>
-        <p className="mt-2 text-sm text-stone">{formatDate(order.created_at)} · {order.email}</p>
+        <p className="mt-2 text-sm text-stone">
+          {formatDate(order.created_at)} · {order.customer_name || order.customer_email}
+          {order.is_guest ? <span className="ml-2 text-xs text-stone">guest</span> : null}
+        </p>
         {order.notes ? (
           <p className={`mt-3 whitespace-pre-wrap text-sm ${isIssue ? "text-ember" : "text-stone"}`}>{order.notes}</p>
         ) : null}

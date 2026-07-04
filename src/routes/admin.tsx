@@ -247,7 +247,10 @@ function AdminOrdersQueue({ email }: { email: string | null }) {
                         {r.id.slice(0, 8)}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-ink">{r.email}</TableCell>
+                    <TableCell className="text-ink">
+                      <span>{r.customer_name || r.customer_email}</span>
+                      {r.is_guest ? <span className="ml-2 text-xs text-stone">guest</span> : null}
+                    </TableCell>
                     <TableCell>
                       <StatusPill status={r.status} />
                     </TableCell>

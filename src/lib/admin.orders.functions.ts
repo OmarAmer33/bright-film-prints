@@ -13,6 +13,10 @@ export type AdminOrderRow = {
   is_rush: boolean;
   has_shipping: boolean;
   notes: string | null;
+  customer_id: string | null;
+  customer_email: string | null;
+  customer_name: string | null;
+  is_guest: boolean;
 };
 
 export const listAdminOrders = createServerFn({ method: "GET" }).handler(
@@ -22,12 +26,22 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, created_at, email, status, subtotal, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes",
+        "id, created_at, email, status, subtotal, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes, customer_id",
       )
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
-    return (data ?? []).map((o) => ({
+    const orders = data ?? [];
+    const ids = Array.from(new Set(orders.map((o) => o.customer_id).filter(Boolean))) as string[];
+    const customersById: Record<string, { email: string | null; name: string | null }> = {};
+    if (ids.length) {
+      const { data: custs } = await supabaseAdmin
+        .from("customers")
+        .select("id, email, name")
+        .in("id", ids);
+      for (const c of custs ?? []) customersById[c.id] = { email: c.email, name: c.name };
+    }
+    return orders.map((o) => ({
       id: o.id,
       created_at: o.created_at,
       email: o.email,
@@ -39,13 +53,19 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(
       is_rush: o.is_rush,
       has_shipping: !!o.shipping_address,
       notes: o.notes,
+      customer_id: o.customer_id,
+      customer_email: (o.customer_id && customersById[o.customer_id]?.email) || o.email,
+      customer_name: (o.customer_id && customersById[o.customer_id]?.name) || null,
+      is_guest: !o.customer_id,
     }));
   },
 );
 
+
 type UploadFile = { id: string; download_url: string | null; width_px: number | null; height_px: number | null; status: string } | null;
 export type AdminOrderItem = { id: string; source: string; size_ft: number; quantity: number; unit_price: number; line_total: number; notes: string | null; dpi_ok: boolean | null; file: UploadFile };
-export type AdminOrderDetail = { id: string; created_at: string; email: string; status: string; subtotal: number; shipping_fee: number; rush_fee: number; tax: number; total: number; rewards_earned: number; rewards_redeemed: number; is_rush: boolean; shipping_address: any | null; notes: string | null; tracking_number: string | null; carrier: string | null; items: AdminOrderItem[] };
+export type AdminOrderDetail = { id: string; created_at: string; email: string; status: string; subtotal: number; shipping_fee: number; rush_fee: number; tax: number; total: number; rewards_earned: number; rewards_redeemed: number; is_rush: boolean; shipping_address: any | null; notes: string | null; tracking_number: string | null; carrier: string | null; customer_id: string | null; customer_email: string | null; customer_name: string | null; is_guest: boolean; items: AdminOrderItem[] };
+
 
 function validateOrderId(raw: unknown): { orderId: string } {
   const r = (raw ?? {}) as Record<string, unknown>;
@@ -60,10 +80,24 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error } = await supabaseAdmin.from("orders")
-      .select("id, created_at, email, status, subtotal, shipping_fee, rush_fee, tax, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes, tracking_number, carrier")
+      .select("id, created_at, email, status, subtotal, shipping_fee, rush_fee, tax, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes, tracking_number, carrier, customer_id")
       .eq("id", data.orderId).maybeSingle();
     if (error) throw error;
     if (!order) return null;
+    let customer_email: string | null = order.email;
+    let customer_name: string | null = null;
+    if (order.customer_id) {
+      const { data: cust } = await supabaseAdmin
+        .from("customers")
+        .select("email, name")
+        .eq("id", order.customer_id)
+        .maybeSingle();
+      if (cust) {
+        customer_email = cust.email ?? order.email;
+        customer_name = cust.name ?? null;
+      }
+    }
+
     const { data: items, error: itemsErr } = await supabaseAdmin.from("order_items")
       .select("id, source, size_ft, quantity, unit_price, line_total, notes, dpi_ok")
       .eq("order_id", data.orderId).order("created_at", { ascending: true });
@@ -90,5 +124,5 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
       }
       itemsOut.push({ id: it.id, source: it.source, size_ft: it.size_ft, quantity: it.quantity, unit_price: it.unit_price, line_total: it.line_total, notes: it.notes, dpi_ok: it.dpi_ok, file });
     }
-    return { ...(order as any), items: itemsOut } as AdminOrderDetail;
+    return { ...(order as any), customer_id: order.customer_id, customer_email, customer_name, is_guest: !order.customer_id, items: itemsOut } as AdminOrderDetail;
   });
