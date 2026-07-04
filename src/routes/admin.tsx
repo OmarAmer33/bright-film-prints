@@ -242,7 +242,11 @@ function AdminOrdersQueue({ email }: { email: string | null }) {
                 <React.Fragment key={r.id}>
                   <TableRow className="border-line">
                     <TableCell className="text-ink whitespace-nowrap">{formatDate(r.created_at)}</TableCell>
-                    <TableCell className="font-mono text-ink">{r.id.slice(0, 8)}</TableCell>
+                    <TableCell className="font-mono">
+                      <Link to="/admin/orders/$id" params={{ id: r.id }} className="text-ink underline underline-offset-2 hover:text-sun">
+                        {r.id.slice(0, 8)}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-ink">{r.email}</TableCell>
                     <TableCell>
                       <StatusPill status={r.status} />
