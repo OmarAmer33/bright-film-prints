@@ -7,7 +7,7 @@ import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
 import { getAdminOrderDetail, type AdminOrderDetail } from "@/lib/admin.orders.functions";
 
-export const Route = createFileRoute("/admin/orders/$id")({
+export const Route = createFileRoute("/admin_/orders/$id")({
   head: () => ({
     meta: [
       { title: "Order — Admin" },
