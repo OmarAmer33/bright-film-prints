@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { assertAdmin } from "@/lib/admin.functions";
+import { assertAdmin } from "@/lib/admin-guard.server";
 
 export type AdminOrderRow = {
   id: string;
