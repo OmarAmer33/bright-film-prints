@@ -91,18 +91,24 @@ function DetailLoader({ id }: { id: string }) {
     | { kind: "ok"; order: AdminOrderDetail }
   >({ kind: "loading" });
 
-  useEffect(() => {
-    let mounted = true;
-    setState({ kind: "loading" });
-    getDetailFn({ data: { orderId: id } })
-      .then((order) => {
-        if (!mounted) return;
-        if (!order) setState({ kind: "notfound" });
-        else setState({ kind: "ok", order });
-      })
-      .catch(() => { if (mounted) setState({ kind: "denied" }); });
-    return () => { mounted = false; };
-  }, [getDetailFn, id]);
+  const load = useCallback(
+    (showLoading: boolean) => {
+      let cancelled = false;
+      if (showLoading) setState({ kind: "loading" });
+      getDetailFn({ data: { orderId: id } })
+        .then((order) => {
+          if (cancelled) return;
+          if (!order) setState({ kind: "notfound" });
+          else setState({ kind: "ok", order });
+        })
+        .catch(() => { if (!cancelled) setState({ kind: "denied" }); });
+      return () => { cancelled = true; };
+    },
+    [getDetailFn, id],
+  );
+
+  useEffect(() => load(true), [load]);
+  const reload = useCallback(() => { load(false); }, [load]);
 
   if (state.kind === "loading") {
     return <div className="rounded-2xl border border-line bg-white p-6 text-ink/60">Loading order…</div>;
@@ -123,7 +129,7 @@ function DetailLoader({ id }: { id: string }) {
       </div>
     );
   }
-  return <OrderView order={state.order} />;
+  return <OrderView order={state.order} reload={reload} />;
 }
 
 function OrderView({ order }: { order: AdminOrderDetail }) {
