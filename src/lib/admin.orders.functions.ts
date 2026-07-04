@@ -124,5 +124,5 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
       }
       itemsOut.push({ id: it.id, source: it.source, size_ft: it.size_ft, quantity: it.quantity, unit_price: it.unit_price, line_total: it.line_total, notes: it.notes, dpi_ok: it.dpi_ok, file });
     }
-    return { ...(order as any), items: itemsOut } as AdminOrderDetail;
+    return { ...(order as any), customer_id: order.customer_id, customer_email, customer_name, is_guest: !order.customer_id, items: itemsOut } as AdminOrderDetail;
   });
