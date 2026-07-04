@@ -193,13 +193,7 @@ function OrderView({ order, reload }: { order: AdminOrderDetail; reload: () => v
         </div>
       </div>
 
-      <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-ink">Fulfillment</h2>
-        <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-          <Row label="Tracking number" value={order.tracking_number ?? "—"} />
-          <Row label="Carrier" value={order.carrier ?? "—"} />
-        </dl>
-      </div>
+      <FulfillmentEditor order={order} reload={reload} />
 
       <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
         <h2 className="font-display text-lg font-bold text-ink">Items</h2>
