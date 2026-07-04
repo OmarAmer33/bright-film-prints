@@ -37,6 +37,16 @@ function useAuthSession() {
 export function SiteHeader() {
   const session = useAuthSession();
   const isSignedIn = !!session;
+  const [isAdmin, setIsAdmin] = useState(false);
+  const getIsAdminFn = useServerFn(getIsAdmin);
+
+  useEffect(() => {
+    if (!session) { setIsAdmin(false); return; }
+    let mounted = true;
+    getIsAdminFn().then((r) => { if (mounted) setIsAdmin(r.isAdmin); }).catch(() => { if (mounted) setIsAdmin(false); });
+    return () => { mounted = false; };
+  }, [session, getIsAdminFn]);
+
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
