@@ -264,3 +264,77 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
     </div>
   );
 }
+
+const STATUS_OPTIONS: Array<{ value: "in_production" | "printed" | "shipped" | "delivered" | "on_hold"; label: string }> = [
+  { value: "in_production", label: "In production" },
+  { value: "printed", label: "Printed" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" },
+  { value: "on_hold", label: "On hold" },
+];
+
+function FulfillmentEditor({ order, reload }: { order: AdminOrderDetail; reload: () => void }) {
+  const updateFn = useServerFn(updateAdminOrder);
+  const settable = new Set(STATUS_OPTIONS.map((o) => o.value));
+  const initialStatus = settable.has(order.status as any) ? order.status : "";
+  const [status, setStatus] = useState<string>(initialStatus);
+  const [tracking, setTracking] = useState<string>(order.tracking_number ?? "");
+  const [carrier, setCarrier] = useState<string>(order.carrier ?? "");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  async function onSave() {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const payload: { orderId: string; status?: string; tracking_number: string | null; carrier: string | null } = {
+        orderId: order.id,
+        tracking_number: tracking.trim() === "" ? null : tracking.trim(),
+        carrier: carrier.trim() === "" ? null : carrier.trim(),
+      };
+      if (status) payload.status = status;
+      await updateFn({ data: payload });
+      setMsg({ kind: "ok", text: "Saved" });
+      reload();
+    } catch {
+      setMsg({ kind: "err", text: "Could not save changes." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
+      <h2 className="font-display text-lg font-bold text-ink">Fulfillment</h2>
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className="block text-xs font-medium text-stone mb-1">Status</label>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger>
+              <SelectValue placeholder="Set status…" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-stone mb-1">Tracking number</label>
+          <Input value={tracking} onChange={(e) => setTracking(e.target.value)} maxLength={100} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-stone mb-1">Carrier</label>
+          <Input value={carrier} onChange={(e) => setCarrier(e.target.value)} maxLength={50} placeholder="FedEx" />
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-3">
+        <Button onClick={onSave} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+        {msg ? (
+          <span className={`text-sm ${msg.kind === "ok" ? "text-stone" : "text-ember"}`}>{msg.text}</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
