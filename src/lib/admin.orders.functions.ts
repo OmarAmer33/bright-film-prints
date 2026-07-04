@@ -13,6 +13,10 @@ export type AdminOrderRow = {
   is_rush: boolean;
   has_shipping: boolean;
   notes: string | null;
+  customer_id: string | null;
+  customer_email: string | null;
+  customer_name: string | null;
+  is_guest: boolean;
 };
 
 export const listAdminOrders = createServerFn({ method: "GET" }).handler(
@@ -22,12 +26,22 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, created_at, email, status, subtotal, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes",
+        "id, created_at, email, status, subtotal, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes, customer_id",
       )
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
-    return (data ?? []).map((o) => ({
+    const orders = data ?? [];
+    const ids = Array.from(new Set(orders.map((o) => o.customer_id).filter(Boolean))) as string[];
+    const customersById: Record<string, { email: string | null; name: string | null }> = {};
+    if (ids.length) {
+      const { data: custs } = await supabaseAdmin
+        .from("customers")
+        .select("id, email, name")
+        .in("id", ids);
+      for (const c of custs ?? []) customersById[c.id] = { email: c.email, name: c.name };
+    }
+    return orders.map((o) => ({
       id: o.id,
       created_at: o.created_at,
       email: o.email,
@@ -39,9 +53,14 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(
       is_rush: o.is_rush,
       has_shipping: !!o.shipping_address,
       notes: o.notes,
+      customer_id: o.customer_id,
+      customer_email: (o.customer_id && customersById[o.customer_id]?.email) || o.email,
+      customer_name: (o.customer_id && customersById[o.customer_id]?.name) || null,
+      is_guest: !o.customer_id,
     }));
   },
 );
+
 
 type UploadFile = { id: string; download_url: string | null; width_px: number | null; height_px: number | null; status: string } | null;
 export type AdminOrderItem = { id: string; source: string; size_ft: number; quantity: number; unit_price: number; line_total: number; notes: string | null; dpi_ok: boolean | null; file: UploadFile };
