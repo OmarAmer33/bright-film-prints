@@ -23,6 +23,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ToolsUpscaleRouteImport } from './routes/tools.upscale'
 import { Route as OrdersTokenRouteImport } from './routes/orders.$token'
 import { Route as ApiUploadsUploadRouteImport } from './routes/api/uploads.upload'
+import { Route as AdminOrdersIdRouteImport } from './routes/admin.orders.$id'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe.webhook'
 
 const UploadRoute = UploadRouteImport.update({
@@ -95,6 +96,11 @@ const ApiUploadsUploadRoute = ApiUploadsUploadRouteImport.update({
   path: '/api/uploads/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
+  id: '/orders/$id',
+  path: '/orders/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe/webhook',
   path: '/api/public/stripe/webhook',
@@ -105,7 +111,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/build': typeof BuildRoute
   '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/upload': typeof UploadRoute
   '/orders/$token': typeof OrdersTokenRoute
   '/tools/upscale': typeof ToolsUpscaleRoute
+  '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/api/uploads/upload': typeof ApiUploadsUploadRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
@@ -122,7 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/build': typeof BuildRoute
   '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadRoute
   '/orders/$token': typeof OrdersTokenRoute
   '/tools/upscale': typeof ToolsUpscaleRoute
+  '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/api/uploads/upload': typeof ApiUploadsUploadRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
@@ -140,7 +148,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/build': typeof BuildRoute
   '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/upload': typeof UploadRoute
   '/orders/$token': typeof OrdersTokenRoute
   '/tools/upscale': typeof ToolsUpscaleRoute
+  '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/api/uploads/upload': typeof ApiUploadsUploadRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/orders/$token'
     | '/tools/upscale'
+    | '/admin/orders/$id'
     | '/api/uploads/upload'
     | '/api/public/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/orders/$token'
     | '/tools/upscale'
+    | '/admin/orders/$id'
     | '/api/uploads/upload'
     | '/api/public/stripe/webhook'
   id:
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/orders/$token'
     | '/tools/upscale'
+    | '/admin/orders/$id'
     | '/api/uploads/upload'
     | '/api/public/stripe/webhook'
   fileRoutesById: FileRoutesById
@@ -211,7 +223,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   BuildRoute: typeof BuildRoute
   CartRoute: typeof CartRoute
   ContactRoute: typeof ContactRoute
@@ -325,6 +337,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUploadsUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/orders/$id': {
+      id: '/admin/orders/$id'
+      path: '/orders/$id'
+      fullPath: '/admin/orders/$id'
+      preLoaderRoute: typeof AdminOrdersIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/public/stripe/webhook': {
       id: '/api/public/stripe/webhook'
       path: '/api/public/stripe/webhook'
@@ -335,11 +354,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminOrdersIdRoute: typeof AdminOrdersIdRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminOrdersIdRoute: AdminOrdersIdRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   BuildRoute: BuildRoute,
   CartRoute: CartRoute,
   ContactRoute: ContactRoute,
