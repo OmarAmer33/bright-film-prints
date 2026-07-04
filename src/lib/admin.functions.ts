@@ -35,3 +35,30 @@ export const requireAdmin = createServerFn({ method: "GET" }).handler(async () =
 
   return { ok: true as const, email };
 });
+
+export const getIsAdmin = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const req = getRequest();
+    const auth = req.headers.get("authorization");
+    if (!auth || !auth.startsWith("Bearer ")) return { isAdmin: false };
+    const token = auth.slice("Bearer ".length).trim();
+    if (token.split(".").length !== 3) return { isAdmin: false };
+
+    const pub = publicClient();
+    const { data: claimsRes, error: claimsErr } = await pub.auth.getClaims(token);
+    if (claimsErr || !claimsRes?.claims?.sub) return { isAdmin: false };
+    const sub = claimsRes.claims.sub as string;
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", sub)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    return { isAdmin: !!row };
+  } catch {
+    return { isAdmin: false };
+  }
+});
