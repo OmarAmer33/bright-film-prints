@@ -76,6 +76,12 @@ export function SiteHeader() {
             </Link>
           ))}
           <AccountNavLink isSignedIn={isSignedIn} />
+          {isAdmin && (
+            <Link to="/admin" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink" activeProps={{ className: "text-ink" }}>
+              <ShieldCheck className="h-4 w-4 text-sun" />
+              Admin
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
