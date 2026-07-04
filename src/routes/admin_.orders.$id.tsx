@@ -125,9 +125,10 @@ function DetailLoader({ id }: { id: string }) {
 
 function OrderView({ order }: { order: AdminOrderDetail }) {
   const isIssue = order.status === "issue";
-  const addr = order.shipping_address as
-    | { name?: string; line1?: string; line2?: string; city?: string; state?: string; postal_code?: string; country?: string }
+  const ship = order.shipping_address as
+    | { name?: string; address?: { line1?: string; line2?: string; city?: string; state?: string; postal_code?: string; country?: string } | null }
     | null;
+  const addr = ship?.address ?? null;
 
   return (
     <div className="space-y-6">
@@ -164,15 +165,15 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
 
         <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
           <h2 className="font-display text-lg font-bold text-ink">Ship to</h2>
-          {addr ? (
+          {ship && (ship.name || addr) ? (
             <address className="mt-3 not-italic text-sm text-ink leading-6">
-              {addr.name ? <div>{addr.name}</div> : null}
-              {addr.line1 ? <div>{addr.line1}</div> : null}
-              {addr.line2 ? <div>{addr.line2}</div> : null}
+              {ship.name ? <div>{ship.name}</div> : null}
+              {addr?.line1 ? <div>{addr.line1}</div> : null}
+              {addr?.line2 ? <div>{addr.line2}</div> : null}
               <div>
-                {[addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ")}
+                {[addr?.city, addr?.state, addr?.postal_code].filter(Boolean).join(", ")}
               </div>
-              {addr.country ? <div>{addr.country}</div> : null}
+              {addr?.country ? <div>{addr.country}</div> : null}
             </address>
           ) : (
             <p className="mt-3 text-sm text-ember">No ship-to address on file</p>
