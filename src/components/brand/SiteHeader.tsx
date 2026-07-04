@@ -108,15 +108,25 @@ export function SiteHeader() {
               </SheetHeader>
               <div className="mt-4 flex flex-col gap-1">
                 {isSignedIn ? (
-                  <SheetClose asChild>
-                    <Link
-                      to="/account"
-                      className="inline-flex items-center gap-2 rounded-pill border border-line px-4 py-2.5 text-sm font-medium text-ink"
-                    >
-                      <CircleUserRound className="h-5 w-5 text-sun" />
-                      Account
-                    </Link>
-                  </SheetClose>
+                  <>
+                    <SheetClose asChild>
+                      <Link
+                        to="/account"
+                        className="inline-flex items-center gap-2 rounded-pill border border-line px-4 py-2.5 text-sm font-medium text-ink"
+                      >
+                        <CircleUserRound className="h-5 w-5 text-sun" />
+                        Account
+                      </Link>
+                    </SheetClose>
+                    {isAdmin && (
+                      <SheetClose asChild>
+                        <Link to="/admin" className="inline-flex items-center gap-2 rounded-pill border border-line px-4 py-2.5 text-sm font-medium text-ink">
+                          <ShieldCheck className="h-5 w-5 text-sun" />
+                          Admin
+                        </Link>
+                      </SheetClose>
+                    )}
+                  </>
                 ) : (
                   <SheetClose asChild>
                     <Link
