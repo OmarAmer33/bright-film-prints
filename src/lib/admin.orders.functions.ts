@@ -126,3 +126,39 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
     }
     return { ...(order as any), customer_id: order.customer_id, customer_email, customer_name, is_guest: !order.customer_id, items: itemsOut } as AdminOrderDetail;
   });
+
+const SETTABLE_STATUSES = ["in_production", "printed", "shipped", "delivered", "on_hold"] as const;
+
+function validateUpdateInput(raw: unknown): { orderId: string; status?: string; tracking_number?: string | null; carrier?: string | null } {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const orderId = typeof r.orderId === "string" ? r.orderId.trim() : "";
+  if (!/^[0-9a-f-]{36}$/i.test(orderId)) throw new Error("Invalid order id");
+  const out: { orderId: string; status?: string; tracking_number?: string | null; carrier?: string | null } = { orderId };
+  if (r.status !== undefined) {
+    const s = String(r.status);
+    if (!(SETTABLE_STATUSES as readonly string[]).includes(s)) throw new Error("Invalid status");
+    out.status = s;
+  }
+  if (r.tracking_number !== undefined) {
+    out.tracking_number = (r.tracking_number === null || r.tracking_number === "") ? null : String(r.tracking_number).trim().slice(0, 100);
+  }
+  if (r.carrier !== undefined) {
+    out.carrier = (r.carrier === null || r.carrier === "") ? null : String(r.carrier).trim().slice(0, 50);
+  }
+  return out;
+}
+
+export const updateAdminOrder = createServerFn({ method: "POST" })
+  .inputValidator(validateUpdateInput)
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    await assertAdmin();
+    const patch: Record<string, unknown> = {};
+    if (data.status !== undefined) patch.status = data.status;
+    if (data.tracking_number !== undefined) patch.tracking_number = data.tracking_number;
+    if (data.carrier !== undefined) patch.carrier = data.carrier;
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("orders").update(patch).eq("id", data.orderId);
+    if (error) throw error;
+    return { ok: true };
+  });
