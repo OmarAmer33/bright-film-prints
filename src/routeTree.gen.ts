@@ -23,7 +23,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ToolsUpscaleRouteImport } from './routes/tools.upscale'
 import { Route as OrdersTokenRouteImport } from './routes/orders.$token'
 import { Route as ApiUploadsUploadRouteImport } from './routes/api/uploads.upload'
-import { Route as AdminOrdersIdRouteImport } from './routes/admin.orders.$id'
+import { Route as AdminOrdersIdRouteImport } from './routes/admin_.orders.$id'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe.webhook'
 
 const UploadRoute = UploadRouteImport.update({
@@ -97,9 +97,9 @@ const ApiUploadsUploadRoute = ApiUploadsUploadRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
-  id: '/orders/$id',
-  path: '/orders/$id',
-  getParentRoute: () => AdminRoute,
+  id: '/admin_/orders/$id',
+  path: '/admin/orders/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe/webhook',
@@ -111,7 +111,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRouteWithChildren
+  '/admin': typeof AdminRoute
   '/build': typeof BuildRoute
   '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
@@ -129,7 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRouteWithChildren
+  '/admin': typeof AdminRoute
   '/build': typeof BuildRoute
   '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
@@ -148,7 +148,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRouteWithChildren
+  '/admin': typeof AdminRoute
   '/build': typeof BuildRoute
   '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
@@ -158,7 +158,7 @@ export interface FileRoutesById {
   '/upload': typeof UploadRoute
   '/orders/$token': typeof OrdersTokenRoute
   '/tools/upscale': typeof ToolsUpscaleRoute
-  '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin_/orders/$id': typeof AdminOrdersIdRoute
   '/api/uploads/upload': typeof ApiUploadsUploadRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
@@ -214,7 +214,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/orders/$token'
     | '/tools/upscale'
-    | '/admin/orders/$id'
+    | '/admin_/orders/$id'
     | '/api/uploads/upload'
     | '/api/public/stripe/webhook'
   fileRoutesById: FileRoutesById
@@ -223,7 +223,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
-  AdminRoute: typeof AdminRouteWithChildren
+  AdminRoute: typeof AdminRoute
   BuildRoute: typeof BuildRoute
   CartRoute: typeof CartRoute
   ContactRoute: typeof ContactRoute
@@ -233,6 +233,7 @@ export interface RootRouteChildren {
   UploadRoute: typeof UploadRoute
   OrdersTokenRoute: typeof OrdersTokenRoute
   ToolsUpscaleRoute: typeof ToolsUpscaleRoute
+  AdminOrdersIdRoute: typeof AdminOrdersIdRoute
   ApiUploadsUploadRoute: typeof ApiUploadsUploadRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
@@ -337,12 +338,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUploadsUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/orders/$id': {
-      id: '/admin/orders/$id'
-      path: '/orders/$id'
+    '/admin_/orders/$id': {
+      id: '/admin_/orders/$id'
+      path: '/admin/orders/$id'
       fullPath: '/admin/orders/$id'
       preLoaderRoute: typeof AdminOrdersIdRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/stripe/webhook': {
       id: '/api/public/stripe/webhook'
@@ -354,21 +355,11 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AdminRouteChildren {
-  AdminOrdersIdRoute: typeof AdminOrdersIdRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminOrdersIdRoute: AdminOrdersIdRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
-  AdminRoute: AdminRouteWithChildren,
+  AdminRoute: AdminRoute,
   BuildRoute: BuildRoute,
   CartRoute: CartRoute,
   ContactRoute: ContactRoute,
@@ -378,6 +369,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadRoute: UploadRoute,
   OrdersTokenRoute: OrdersTokenRoute,
   ToolsUpscaleRoute: ToolsUpscaleRoute,
+  AdminOrdersIdRoute: AdminOrdersIdRoute,
   ApiUploadsUploadRoute: ApiUploadsUploadRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
