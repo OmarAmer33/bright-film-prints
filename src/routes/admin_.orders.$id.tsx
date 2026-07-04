@@ -132,7 +132,7 @@ function DetailLoader({ id }: { id: string }) {
   return <OrderView order={state.order} reload={reload} />;
 }
 
-function OrderView({ order }: { order: AdminOrderDetail }) {
+function OrderView({ order, reload }: { order: AdminOrderDetail; reload: () => void }) {
   const isIssue = order.status === "issue";
   const ship = order.shipping_address as
     | { name?: string; address?: { line1?: string; line2?: string; city?: string; state?: string; postal_code?: string; country?: string } | null }
