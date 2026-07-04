@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Session } from "@supabase/supabase-js";
-import { CircleUserRound, LogIn, Menu } from "lucide-react";
+import { CircleUserRound, LogIn, Menu, ShieldCheck } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import logoAsset from "@/assets/bright-transfers-logo.png.asset.json";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart-store";
+import { getIsAdmin } from "@/lib/admin.functions";
 import {
   Sheet,
   SheetClose,
