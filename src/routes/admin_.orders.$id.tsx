@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
-import { getAdminOrderDetail, type AdminOrderDetail } from "@/lib/admin.orders.functions";
+import { getAdminOrderDetail, updateAdminOrder, type AdminOrderDetail } from "@/lib/admin.orders.functions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/admin_/orders/$id")({
   head: () => ({
@@ -88,18 +91,24 @@ function DetailLoader({ id }: { id: string }) {
     | { kind: "ok"; order: AdminOrderDetail }
   >({ kind: "loading" });
 
-  useEffect(() => {
-    let mounted = true;
-    setState({ kind: "loading" });
-    getDetailFn({ data: { orderId: id } })
-      .then((order) => {
-        if (!mounted) return;
-        if (!order) setState({ kind: "notfound" });
-        else setState({ kind: "ok", order });
-      })
-      .catch(() => { if (mounted) setState({ kind: "denied" }); });
-    return () => { mounted = false; };
-  }, [getDetailFn, id]);
+  const load = useCallback(
+    (showLoading: boolean) => {
+      let cancelled = false;
+      if (showLoading) setState({ kind: "loading" });
+      getDetailFn({ data: { orderId: id } })
+        .then((order) => {
+          if (cancelled) return;
+          if (!order) setState({ kind: "notfound" });
+          else setState({ kind: "ok", order });
+        })
+        .catch(() => { if (!cancelled) setState({ kind: "denied" }); });
+      return () => { cancelled = true; };
+    },
+    [getDetailFn, id],
+  );
+
+  useEffect(() => load(true), [load]);
+  const reload = useCallback(() => { load(false); }, [load]);
 
   if (state.kind === "loading") {
     return <div className="rounded-2xl border border-line bg-white p-6 text-ink/60">Loading order…</div>;
@@ -120,10 +129,10 @@ function DetailLoader({ id }: { id: string }) {
       </div>
     );
   }
-  return <OrderView order={state.order} />;
+  return <OrderView order={state.order} reload={reload} />;
 }
 
-function OrderView({ order }: { order: AdminOrderDetail }) {
+function OrderView({ order, reload }: { order: AdminOrderDetail; reload: () => void }) {
   const isIssue = order.status === "issue";
   const ship = order.shipping_address as
     | { name?: string; address?: { line1?: string; line2?: string; city?: string; state?: string; postal_code?: string; country?: string } | null }
@@ -184,13 +193,7 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
-        <h2 className="font-display text-lg font-bold text-ink">Fulfillment</h2>
-        <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-          <Row label="Tracking number" value={order.tracking_number ?? "—"} />
-          <Row label="Carrier" value={order.carrier ?? "—"} />
-        </dl>
-      </div>
+      <FulfillmentEditor order={order} reload={reload} />
 
       <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
         <h2 className="font-display text-lg font-bold text-ink">Items</h2>
@@ -258,6 +261,80 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
     <div className="flex items-baseline justify-between gap-4">
       <dt className="text-stone">{label}</dt>
       <dd className={bold ? "font-semibold text-ink" : "text-ink"}>{value}</dd>
+    </div>
+  );
+}
+
+const STATUS_OPTIONS: Array<{ value: "in_production" | "printed" | "shipped" | "delivered" | "on_hold"; label: string }> = [
+  { value: "in_production", label: "In production" },
+  { value: "printed", label: "Printed" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" },
+  { value: "on_hold", label: "On hold" },
+];
+
+function FulfillmentEditor({ order, reload }: { order: AdminOrderDetail; reload: () => void }) {
+  const updateFn = useServerFn(updateAdminOrder);
+  const settable = new Set(STATUS_OPTIONS.map((o) => o.value));
+  const initialStatus = settable.has(order.status as any) ? order.status : "";
+  const [status, setStatus] = useState<string>(initialStatus);
+  const [tracking, setTracking] = useState<string>(order.tracking_number ?? "");
+  const [carrier, setCarrier] = useState<string>(order.carrier ?? "");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  async function onSave() {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const payload: { orderId: string; status?: string; tracking_number: string | null; carrier: string | null } = {
+        orderId: order.id,
+        tracking_number: tracking.trim() === "" ? null : tracking.trim(),
+        carrier: carrier.trim() === "" ? null : carrier.trim(),
+      };
+      if (status) payload.status = status;
+      await updateFn({ data: payload });
+      setMsg({ kind: "ok", text: "Saved" });
+      reload();
+    } catch {
+      setMsg({ kind: "err", text: "Could not save changes." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
+      <h2 className="font-display text-lg font-bold text-ink">Fulfillment</h2>
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className="block text-xs font-medium text-stone mb-1">Status</label>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger>
+              <SelectValue placeholder="Set status…" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-stone mb-1">Tracking number</label>
+          <Input value={tracking} onChange={(e) => setTracking(e.target.value)} maxLength={100} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-stone mb-1">Carrier</label>
+          <Input value={carrier} onChange={(e) => setCarrier(e.target.value)} maxLength={50} placeholder="FedEx" />
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-3">
+        <Button onClick={onSave} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+        {msg ? (
+          <span className={`text-sm ${msg.kind === "ok" ? "text-stone" : "text-ember"}`}>{msg.text}</span>
+        ) : null}
+      </div>
     </div>
   );
 }
