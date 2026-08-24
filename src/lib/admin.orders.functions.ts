@@ -64,7 +64,7 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(
 
 type UploadFile = { id: string; download_url: string | null; width_px: number | null; height_px: number | null; status: string } | null;
 export type AdminOrderItem = { id: string; source: string; size_ft: number; quantity: number; unit_price: number; line_total: number; notes: string | null; dpi_ok: boolean | null; file: UploadFile };
-export type AdminOrderDetail = { id: string; created_at: string; email: string; status: string; subtotal: number; shipping_fee: number; rush_fee: number; tax: number; total: number; rewards_earned: number; rewards_redeemed: number; is_rush: boolean; shipping_address: any | null; notes: string | null; tracking_number: string | null; carrier: string | null; customer_id: string | null; customer_email: string | null; customer_name: string | null; is_guest: boolean; items: AdminOrderItem[] };
+export type AdminOrderDetail = { id: string; created_at: string; email: string; status: string; subtotal: number; shipping_fee: number; rush_fee: number; tax: number; total: number; rewards_earned: number; rewards_redeemed: number; is_rush: boolean; shipping_address: any | null; notes: string | null; tracking_number: string | null; carrier: string | null; label_url: string | null; customer_id: string | null; customer_email: string | null; customer_name: string | null; is_guest: boolean; items: AdminOrderItem[] };
 
 
 function validateOrderId(raw: unknown): { orderId: string } {
