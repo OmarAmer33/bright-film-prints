@@ -340,3 +340,57 @@ function FulfillmentEditor({ order, reload }: { order: AdminOrderDetail; reload:
     </div>
   );
 }
+
+function LabelGenerator({ order, reload }: { order: AdminOrderDetail; reload: () => void }) {
+  const genFn = useServerFn(generateShippingLabel);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const hasAddress = !!(order.shipping_address as any)?.address?.line1;
+
+  async function onGenerate() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await genFn({ data: { orderId: order.id } });
+      setMsg({ kind: "ok", text: `Label created · ${r.carrier} · ${r.tracking_number}` });
+      reload();
+    } catch (e) {
+      setMsg({ kind: "err", text: (e as Error).message || "Label generation failed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
+      <h2 className="font-display text-lg font-bold text-ink">Shipping label</h2>
+      {order.label_url ? (
+        <div className="mt-3 space-y-1.5 text-sm">
+          <p className="text-ink">Carrier: {order.carrier}</p>
+          <p className="text-ink font-mono">Tracking: {order.tracking_number}</p>
+          <a
+            href={order.label_url}
+            target="_blank"
+            rel="noopener"
+            className="inline-block text-ink underline underline-offset-2 hover:text-sun"
+          >
+            Download label
+          </a>
+          <p className="pt-1 text-xs text-stone">
+            Buying a label does not notify the customer. Set status to "shipped" below to send the shipping email.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Button onClick={onGenerate} disabled={busy || !hasAddress}>
+            {busy ? "Generating…" : "Generate label (test)"}
+          </Button>
+          {!hasAddress ? <p className="text-sm text-ember">No ship-to address on file.</p> : null}
+        </div>
+      )}
+      {msg ? (
+        <p className={`mt-3 text-sm ${msg.kind === "ok" ? "text-stone" : "text-ember"}`}>{msg.text}</p>
+      ) : null}
+    </div>
+  );
+}
