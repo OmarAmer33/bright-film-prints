@@ -169,3 +169,36 @@ export const updateAdminOrder = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+// Placeholder ship-from — CHAI-CONFIRM at launch (real Miramar business address + phone).
+const SHIP_FROM = { company: "Bright Transfers", street1: "1 Placeholder Way", city: "Miramar", state: "FL", zip: "33025", country: "US", phone: "0000000000" };
+
+export const generateShippingLabel = createServerFn({ method: "POST" })
+  .inputValidator(validateOrderId)
+  .handler(async ({ data }): Promise<{ ok: true; tracking_number: string; carrier: string; label_url: string }> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order, error } = await supabaseAdmin.from("orders").select("id, shipping_address").eq("id", data.orderId).maybeSingle();
+    if (error) throw error;
+    if (!order) throw new Error("Order not found");
+    const ship = order.shipping_address as { name?: string; address?: { line1?: string; line2?: string; city?: string; state?: string; postal_code?: string; country?: string } } | null;
+    const a = ship?.address;
+    if (!ship || !a?.line1 || !a?.city || !a?.state || !a?.postal_code) throw new Error("Order has no complete ship-to address");
+    const { data: items } = await supabaseAdmin.from("order_items").select("size_ft, quantity").eq("order_id", data.orderId);
+    const totalFeet = (items ?? []).reduce((s, it) => s + Number(it.size_ft) * Number(it.quantity), 0);
+    const parcel = { length: 24, width: 4, height: 4, weight: 8 + 4 * totalFeet }; // in/in/in/oz — CHAI-CONFIRM
+    const { buyCheapestLabel } = await import("@/lib/easypost.server");
+    const label = await buyCheapestLabel({
+      to: { name: ship.name ?? null, street1: a.line1!, street2: a.line2 ?? null, city: a.city!, state: a.state!, zip: a.postal_code!, country: a.country ?? "US" },
+      from: SHIP_FROM,
+      parcel,
+    });
+    const { error: upErr } = await supabaseAdmin.from("orders").update({
+      tracking_number: label.tracking_code,
+      carrier: label.carrier,
+      label_url: label.label_url,
+      easypost_shipment_id: label.shipment_id,
+    }).eq("id", data.orderId);
+    if (upErr) throw upErr;
+    return { ok: true, tracking_number: label.tracking_code, carrier: label.carrier, label_url: label.label_url };
+  });
