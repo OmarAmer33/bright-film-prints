@@ -80,7 +80,7 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error } = await supabaseAdmin.from("orders")
-      .select("id, created_at, email, status, subtotal, shipping_fee, rush_fee, tax, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes, tracking_number, carrier, customer_id")
+      .select("id, created_at, email, status, subtotal, shipping_fee, rush_fee, tax, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes, tracking_number, carrier, label_url, customer_id")
       .eq("id", data.orderId).maybeSingle();
     if (error) throw error;
     if (!order) return null;
