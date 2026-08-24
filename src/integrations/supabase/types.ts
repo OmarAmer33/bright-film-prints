@@ -152,10 +152,12 @@ export type Database = {
           carrier: string | null
           created_at: string
           customer_id: string | null
+          easypost_shipment_id: string | null
           email: string
           guest_email_lookup_token: string | null
           id: string
           is_rush: boolean
+          label_url: string | null
           notes: string | null
           rewards_earned: number
           rewards_rate_applied: number
@@ -178,10 +180,12 @@ export type Database = {
           carrier?: string | null
           created_at?: string
           customer_id?: string | null
+          easypost_shipment_id?: string | null
           email: string
           guest_email_lookup_token?: string | null
           id?: string
           is_rush?: boolean
+          label_url?: string | null
           notes?: string | null
           rewards_earned?: number
           rewards_rate_applied?: number
@@ -204,10 +208,12 @@ export type Database = {
           carrier?: string | null
           created_at?: string
           customer_id?: string | null
+          easypost_shipment_id?: string | null
           email?: string
           guest_email_lookup_token?: string | null
           id?: string
           is_rush?: boolean
+          label_url?: string | null
           notes?: string | null
           rewards_earned?: number
           rewards_rate_applied?: number
