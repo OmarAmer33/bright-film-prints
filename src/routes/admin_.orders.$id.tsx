@@ -195,6 +195,8 @@ function OrderView({ order, reload }: { order: AdminOrderDetail; reload: () => v
 
       <FulfillmentEditor order={order} reload={reload} />
 
+      <LabelGenerator order={order} reload={reload} />
+
       <div className="rounded-2xl border border-line bg-white p-6 shadow-sm">
         <h2 className="font-display text-lg font-bold text-ink">Items</h2>
         <div className="mt-4 overflow-x-auto">
