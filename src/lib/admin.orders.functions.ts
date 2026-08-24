@@ -64,7 +64,7 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(
 
 type UploadFile = { id: string; download_url: string | null; width_px: number | null; height_px: number | null; status: string } | null;
 export type AdminOrderItem = { id: string; source: string; size_ft: number; quantity: number; unit_price: number; line_total: number; notes: string | null; dpi_ok: boolean | null; file: UploadFile };
-export type AdminOrderDetail = { id: string; created_at: string; email: string; status: string; subtotal: number; shipping_fee: number; rush_fee: number; tax: number; total: number; rewards_earned: number; rewards_redeemed: number; is_rush: boolean; shipping_address: any | null; notes: string | null; tracking_number: string | null; carrier: string | null; customer_id: string | null; customer_email: string | null; customer_name: string | null; is_guest: boolean; items: AdminOrderItem[] };
+export type AdminOrderDetail = { id: string; created_at: string; email: string; status: string; subtotal: number; shipping_fee: number; rush_fee: number; tax: number; total: number; rewards_earned: number; rewards_redeemed: number; is_rush: boolean; shipping_address: any | null; notes: string | null; tracking_number: string | null; carrier: string | null; label_url: string | null; customer_id: string | null; customer_email: string | null; customer_name: string | null; is_guest: boolean; items: AdminOrderItem[] };
 
 
 function validateOrderId(raw: unknown): { orderId: string } {
@@ -80,7 +80,7 @@ export const getAdminOrderDetail = createServerFn({ method: "POST" })
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error } = await supabaseAdmin.from("orders")
-      .select("id, created_at, email, status, subtotal, shipping_fee, rush_fee, tax, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes, tracking_number, carrier, customer_id")
+      .select("id, created_at, email, status, subtotal, shipping_fee, rush_fee, tax, total, rewards_earned, rewards_redeemed, is_rush, shipping_address, notes, tracking_number, carrier, label_url, customer_id")
       .eq("id", data.orderId).maybeSingle();
     if (error) throw error;
     if (!order) return null;
@@ -168,4 +168,37 @@ export const updateAdminOrder = createServerFn({ method: "POST" })
       if (!emailedOk) console.error(`[updateAdminOrder] shipping email not sent for ${data.orderId}`);
     }
     return { ok: true };
+  });
+
+// Placeholder ship-from — CHAI-CONFIRM at launch (real Miramar business address + phone).
+const SHIP_FROM = { company: "Bright Transfers", street1: "1 Placeholder Way", city: "Miramar", state: "FL", zip: "33025", country: "US", phone: "0000000000" };
+
+export const generateShippingLabel = createServerFn({ method: "POST" })
+  .inputValidator(validateOrderId)
+  .handler(async ({ data }): Promise<{ ok: true; tracking_number: string; carrier: string; label_url: string }> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order, error } = await supabaseAdmin.from("orders").select("id, shipping_address").eq("id", data.orderId).maybeSingle();
+    if (error) throw error;
+    if (!order) throw new Error("Order not found");
+    const ship = order.shipping_address as { name?: string; address?: { line1?: string; line2?: string; city?: string; state?: string; postal_code?: string; country?: string } } | null;
+    const a = ship?.address;
+    if (!ship || !a?.line1 || !a?.city || !a?.state || !a?.postal_code) throw new Error("Order has no complete ship-to address");
+    const { data: items } = await supabaseAdmin.from("order_items").select("size_ft, quantity").eq("order_id", data.orderId);
+    const totalFeet = (items ?? []).reduce((s, it) => s + Number(it.size_ft) * Number(it.quantity), 0);
+    const parcel = { length: 24, width: 4, height: 4, weight: 8 + 4 * totalFeet }; // in/in/in/oz — CHAI-CONFIRM
+    const { buyCheapestLabel } = await import("@/lib/easypost.server");
+    const label = await buyCheapestLabel({
+      to: { name: ship.name ?? null, street1: a.line1!, street2: a.line2 ?? null, city: a.city!, state: a.state!, zip: a.postal_code!, country: a.country ?? "US" },
+      from: SHIP_FROM,
+      parcel,
+    });
+    const { error: upErr } = await supabaseAdmin.from("orders").update({
+      tracking_number: label.tracking_code,
+      carrier: label.carrier,
+      label_url: label.label_url,
+      easypost_shipment_id: label.shipment_id,
+    }).eq("id", data.orderId);
+    if (upErr) throw upErr;
+    return { ok: true, tracking_number: label.tracking_code, carrier: label.carrier, label_url: label.label_url };
   });
