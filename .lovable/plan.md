@@ -1,25 +1,34 @@
-## Read-only admin order list
+# Wire Resend transactional email
 
-Add a server-side admin queue behind the existing `/admin` gate. Read-only, no writes. `requireAdmin`, `getIsAdmin`, and the session/gate logic in `admin.tsx` stay untouched.
+Two emails: order confirmation (on the Stripe paid-flip) and shipping notification (when an admin moves an order into "shipped"). Sends are fire-and-forget — they can never fail a payment webhook or an admin save.
 
-### 1. `src/lib/admin.functions.ts` (edit — append only)
-Append `assertAdmin()` exactly as specified: a plain (non-server-fn) async helper that reads the bearer token via `getRequest()`, validates it with `publicClient().auth.getClaims()`, checks `user_roles` via `supabaseAdmin`, throws `"Not authorized"` on any failure, returns `{ sub, email }` on success. `requireAdmin` and `getIsAdmin` are not modified.
+## Files touched (exactly three, plus one secret)
 
-### 2. `src/lib/admin.orders.functions.ts` (new)
-New `createServerFn({ method: "GET" })` named `listAdminOrders`. Calls `await assertAdmin()`, dynamically imports `supabaseAdmin`, selects the specified columns from `orders` ordered by `created_at desc` limit 200, maps to `AdminOrderRow[]` (deriving `has_shipping` from `!!shipping_address`). Exports the `AdminOrderRow` type.
+1. **New: `src/lib/email.server.ts`** — server-only module, called via `await import(...)` inside server handlers.
+2. **Edit: `src/routes/api/public/stripe.webhook.ts`** — one insertion in the paid branch, after the redemption block.
+3. **Edit: `src/lib/admin.orders.functions.ts`** — `updateAdminOrder` handler body only.
+4. **Secret: `RESEND_API_KEY`** — server-side only, requested through the secure form.
 
-### 3. `src/routes/admin.tsx` (edit — only the ok-state render)
-Leave session resolution, `requireAdmin` call, loading state, sign-in-required state, and not-authorized state exactly as-is. Replace only the current "Access granted" placeholder branch with a new `<AdminOrdersQueue email={...} />` component defined in the same file:
+Nothing else changes: no schema, RLS, pricing, reconciliation, rewards, idempotency, or UI.
 
-- Uses `useServerFn(listAdminOrders)` inside a `useEffect` (mounted-flag cleanup) with local `rows`, `loading`, `error` state.
-- Renders heading "Orders" plus a subheading "Signed in as {email}".
-- Loading: "Loading orders…". Empty: "No orders yet.". Error: neutral inline message.
-- Table (newest first) with columns: Date (readable `created_at`), Order (first 8 chars of id, monospace), Customer (email), Status, Total (formatted `$`), Flags.
-  - Status pill: neutral ink/stone for paid, in_production, printed, shipped, delivered, on_hold; `issue` uses `border-ember text-ember`.
-  - Flags cell composes: `RUSH` when `is_rush`; `−$X redeemed` when `rewards_redeemed > 0`; `no ship-to` in ember when `!has_shipping`.
-  - For rows with status `issue`, render a second row directly beneath spanning all columns with `notes` in small ember text.
-- Styling uses existing brand tokens (paper/ink/line/stone/ember). Uses `@/components/ui/table` primitives if they exist in the project; otherwise a plain styled `<table>` with the same tokens. No row interactivity.
+## One thing to confirm
 
-### Notes
-- No changes to any other files, pricing, rewards, webhook, or the auth gate.
-- No publish after build.
+The HTML markup inside the module you pasted was stripped by the chat (all the `<div>`, `<table>`, `<tr>` tags are gone, and the `Promise` return types lost their `<boolean>`). I will rebuild the module with the exact same structure, logic, function names, log strings, and copy, filling in table/div markup for the email body styled with the brand palette (paper `#FFF7EC`, ink, gold/sun accent on the CTA button, matching the order-summary page). Everything else stays byte-identical to what you specified.
+
+## Technical detail
+
+`email.server.ts`:
+- `sendEmail(to, subject, html)` POSTs to `https://api.resend.com/emails` with `fetch` (no SDK — Worker-runtime safe, same constraint as the Stripe webhook's `constructEventAsync`). Returns `boolean`, self-catches, logs `[email] send failed <status>: <body>`.
+- `getResendKey()` reads `process.env.RESEND_API_KEY` inside the call (never at module scope).
+- `fromAddress()` = `process.env.EMAIL_FROM ?? "Bright Transfers <onboarding@resend.dev>"`. Note: the onboarding sender only delivers to your own Resend account address until a domain is verified.
+- `siteOrigin()` = `process.env.PUBLIC_SITE_URL ?? "https://bright-film-prints.lovable.app"`.
+- `loadOrderForEmail(orderId)` uses the service-role admin client to read the order, resolve the customer email/name via `customer_id` (falling back to `orders.email` for guests), and load `order_items`.
+- `sendOrderConfirmationEmail` / `sendShippingNotificationEmail` — both `Promise<boolean>`, both self-catching, both linking to `/orders/<view_token>`.
+
+Webhook: inside `checkout.session.completed`, in the `else` branch where the paid-flip updated a row, after the `if (redeem > 0)` block, dynamically import and call `sendOrderConfirmationEmail(order.id)`, logging on failure. The reconciliation block, the `.eq("status","new")` gate, accrual, and redemption stay untouched.
+
+`updateAdminOrder`: reads the prior `status` before applying the patch, applies the patch as today, then sends the shipping email only on a transition into `shipped` (prior status was not already `shipped`) — so re-saving a shipped order does not re-email.
+
+## After building
+
+Report the changed files and confirm nothing else was modified. I will not publish unless you ask.
