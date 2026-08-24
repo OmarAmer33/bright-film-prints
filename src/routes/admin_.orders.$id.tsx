@@ -5,7 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
-import { getAdminOrderDetail, updateAdminOrder, type AdminOrderDetail } from "@/lib/admin.orders.functions";
+import { getAdminOrderDetail, updateAdminOrder, generateShippingLabel, type AdminOrderDetail } from "@/lib/admin.orders.functions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
