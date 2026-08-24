@@ -158,7 +158,14 @@ export const updateAdminOrder = createServerFn({ method: "POST" })
     if (data.carrier !== undefined) patch.carrier = data.carrier;
     if (Object.keys(patch).length === 0) return { ok: true };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: prior } = await supabaseAdmin.from("orders").select("status").eq("id", data.orderId).maybeSingle();
     const { error } = await supabaseAdmin.from("orders").update(patch as any).eq("id", data.orderId);
     if (error) throw error;
+    const becameShipped = data.status === "shipped" && prior?.status !== "shipped";
+    if (becameShipped) {
+      const { sendShippingNotificationEmail } = await import("@/lib/email.server");
+      const emailedOk = await sendShippingNotificationEmail(data.orderId);
+      if (!emailedOk) console.error(`[updateAdminOrder] shipping email not sent for ${data.orderId}`);
+    }
     return { ok: true };
   });

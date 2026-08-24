@@ -147,6 +147,9 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
               });
               if (redeemErr) console.error("[stripe.webhook] redemption commit failed:", redeemErr);
             }
+            const { sendOrderConfirmationEmail } = await import("@/lib/email.server");
+            const emailedOk = await sendOrderConfirmationEmail(order.id);
+            if (!emailedOk) console.error(`[stripe.webhook] confirmation email not sent for ${order.id}`);
           }
           return new Response("ok", { status: 200 });
         }
