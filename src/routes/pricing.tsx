@@ -224,7 +224,7 @@ function HowPricingWorks() {
 
 function Callouts({ freeShip }: { freeShip: number }) {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-4 sm:px-6 md:py-8">
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-16">
       <div className="grid gap-5 md:grid-cols-2">
         <div className="rounded-card border border-line bg-paper p-6 shadow-warm/40">
           <h3 className="text-xl text-ink">Free shipping over ${freeShip}</h3>
