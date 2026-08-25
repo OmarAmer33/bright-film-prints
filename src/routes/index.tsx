@@ -5,6 +5,7 @@ import { PriceTicker } from "@/components/brand/PriceTicker";
 import { GradientButton } from "@/components/brand/GradientButton";
 import { TrustRow } from "@/components/brand/TrustRow";
 import { Reveal } from "@/components/brand/Reveal";
+import { Sunburst } from "@/components/brand/Sunburst";
 import { getPricing, type PricingPayload } from "@/lib/pricing.functions";
 
 const FALLBACK_TIERS = [
