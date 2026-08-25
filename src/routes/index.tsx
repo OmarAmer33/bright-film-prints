@@ -307,20 +307,22 @@ function ClosingCTA() {
   // Gradient restraint: dawn-tinted band with a single gradient element (the button).
   return (
     <section className="bg-dawn">
-      <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
-        <h2 className="text-3xl text-ink sm:text-4xl md:text-5xl">
-          Ready to see your art on a shirt?
-        </h2>
-        <p className="mt-4 max-w-xl text-lg text-ink/70">
-          Upload a PNG, pick a size, and we'll get it printed and on its way.
-        </p>
+      <Reveal>
+        <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
+          <h2 className="text-3xl text-ink sm:text-4xl md:text-5xl">
+            Ready to see your art on a shirt?
+          </h2>
+          <p className="mt-4 max-w-xl text-lg text-ink/70">
+            Upload a PNG, pick a size, and we'll get it printed and on its way.
+          </p>
 
-        <div className="mt-8">
-          <GradientButton to="/upload" size="lg">
-            Start your order →
-          </GradientButton>
+          <div className="mt-8">
+            <GradientButton to="/upload" size="lg">
+              Start your order →
+            </GradientButton>
+          </div>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }
