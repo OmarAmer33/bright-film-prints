@@ -74,16 +74,17 @@ function Index() {
 function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* Sun-gradient orb (faint, decorative) */}
+      {/* Sunburst corona (faint, decorative) — replaces the plain gradient orbs,
+          echoing the logo's spiky sun. Top-right keeps the gentle float; the
+          bottom-left is static, rotated so the ray phase differs. */}
       <div
         aria-hidden
-        className="bt-animate-float pointer-events-none absolute -top-40 right-[-10%] h-[520px] w-[520px] rounded-full opacity-30 blur-3xl"
-        style={{ backgroundImage: "var(--gradient-sun)" }}
+        className="bt-animate-float bt-sunburst pointer-events-none absolute -top-40 right-[-10%] h-[560px] w-[560px] opacity-[0.14] blur-[10px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-32 left-[-10%] h-[380px] w-[380px] rounded-full opacity-20 blur-3xl"
-        style={{ backgroundImage: "var(--gradient-sun)" }}
+        className="bt-sunburst pointer-events-none absolute -bottom-32 left-[-10%] h-[400px] w-[400px] opacity-[0.08] blur-[14px]"
+        style={{ transform: "rotate(18deg)" }}
       />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-20 pt-16 sm:px-6 sm:pt-24 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:pb-28 md:pt-28">
@@ -304,11 +305,17 @@ function PricingTeaser({ tiers: liveTiers }: { tiers: { size_ft: number; price: 
 }
 
 function ClosingCTA() {
-  // Gradient restraint: dawn-tinted band with a single gradient element (the button).
+  // Gradient restraint: dawn-tinted band with a single gradient element (the button),
+  // plus a whisper-faint sunburst corona behind the headline.
   return (
-    <section className="bg-dawn">
+    <section className="relative overflow-hidden bg-dawn">
+      {/* Decorative sunburst glow behind the conversion headline. */}
+      <div
+        aria-hidden
+        className="bt-sunburst pointer-events-none absolute left-1/2 top-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 opacity-[0.07] blur-[18px]"
+      />
       <Reveal>
-        <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
+        <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
           <h2 className="text-3xl text-ink sm:text-4xl md:text-5xl">
             Ready to see your art on a shirt?
           </h2>

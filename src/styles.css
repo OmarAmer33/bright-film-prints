@@ -147,6 +147,23 @@
   background-image: var(--gradient-sun);
 }
 
+/*
+ * Whisper-faint sunburst corona — echoes the Bright Transfers logo.
+ * Two stacked layers: radiating conic rays over a warm radial glow,
+ * softened by a radial mask so no hard circular edge is visible.
+ * The -webkit-mask-image prefix MUST come first: iOS Safari ignores
+ * the unprefixed property and would render the rays with a hard edge.
+ * Size / opacity / blur are set inline per placement; this holds only
+ * the background + mask. Opacity stays low so it sits behind content.
+ */
+@utility bt-sunburst {
+  background-image:
+    repeating-conic-gradient(from -12deg, var(--sun) 0deg 3deg, transparent 3deg 15deg),
+    radial-gradient(closest-side, var(--gold) 0%, var(--sun) 45%, var(--ember) 100%);
+  -webkit-mask-image: radial-gradient(closest-side, black 0%, black 38%, transparent 72%);
+  mask-image: radial-gradient(closest-side, black 0%, black 38%, transparent 72%);
+}
+
 @utility text-gradient-sun {
   background-image: var(--gradient-sun);
   -webkit-background-clip: text;
