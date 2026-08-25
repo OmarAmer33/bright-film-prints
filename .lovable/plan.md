@@ -45,6 +45,6 @@ No new animation is introduced, so the existing `@media (prefers-reduced-motion:
 ## Files touched
 
 - `src/routes/index.tsx` — swap the two hero orb divs for sunburst divs; add one decorative div plus `relative overflow-hidden` to `ClosingCTA`.
-- `src/styles.css` — optional `@utility bt-sunburst` for the shared conic/mask background (keeps index.tsx inline styles short).
+- `src/styles.css` — optional `@utility bt-sunburst` for the shared conic/mask background (keeps index.tsx inline styles short). Its mask declaration uses both `-webkit-mask-image` (first) and `mask-image` with identical values; any inline `mask-image` in index.tsx follows the same doubled-prefix form.
 
 Nothing else changes: hero grid, media slot, copy, CTAs, header, footer, and all other routes are untouched.
