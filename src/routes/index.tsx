@@ -253,45 +253,49 @@ function PricingTeaser({ tiers: liveTiers }: { tiers: { size_ft: number; price: 
   return (
     <section className="bg-dawn/40 border-y border-line">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Pricing</p>
-            <h2 className="mt-3 text-3xl text-ink sm:text-4xl">Pay by the square foot.</h2>
-            <p className="mt-3 max-w-xl text-ink/70">
-              The bigger the sheet, the lower the rate. No hidden setup, no per-color fees.
-            </p>
+        <Reveal>
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Pricing</p>
+              <h2 className="mt-3 text-3xl text-ink sm:text-4xl">Pay by the square foot.</h2>
+              <p className="mt-3 max-w-xl text-ink/70">
+                The bigger the sheet, the lower the rate. No hidden setup, no per-color fees.
+              </p>
+            </div>
+            <GradientButton to="/pricing" variant="outline">
+              See full pricing
+            </GradientButton>
           </div>
-          <GradientButton to="/pricing" variant="outline">
-            See full pricing
-          </GradientButton>
-        </div>
+        </Reveal>
 
         <div className="mt-10 grid gap-4 md:grid-cols-3 md:gap-5">
-          {tiers.map((t) => (
-            <div
-              key={t.size}
-              className={
-                "rounded-card border bg-paper " +
-                "flex items-center justify-between gap-3 px-5 py-4 " +
-                "md:flex-col md:items-stretch md:justify-start md:gap-0 md:p-6 " +
-                (t.featured
-                  ? "border-ember/40 shadow-glow ring-1 ring-ember/20"
-                  : "border-line shadow-warm/30")
-              }
-            >
-              <div className="flex items-center gap-2 md:block">
-                <div className="font-display text-2xl font-extrabold text-ink md:text-3xl md:order-2 md:mt-2">
-                  {t.size}
+          {tiers.map((t, i) => (
+            <Reveal key={t.size} delay={i * 90}>
+              <div
+                className={
+                  "bt-hover-lift h-full rounded-card border bg-paper " +
+                  "flex items-center justify-between gap-3 px-5 py-4 " +
+                  "transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 " +
+                  "md:flex-col md:items-stretch md:justify-start md:gap-0 md:p-6 " +
+                  (t.featured
+                    ? "border-ember/40 shadow-glow ring-1 ring-ember/20"
+                    : "border-line shadow-warm/30 hover:shadow-warm")
+                }
+              >
+                <div className="flex items-center gap-2 md:block">
+                  <div className="font-display text-2xl font-extrabold text-ink md:text-3xl md:order-2 md:mt-2">
+                    {t.size}
+                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone md:order-1 md:text-xs">
+                    {t.featured ? "Best value" : "Length"}
+                  </div>
                 </div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone md:order-1 md:text-xs">
-                  {t.featured ? "Best value" : "Length"}
+                <div className="text-right md:text-left md:mt-4">
+                  <div className="font-mono text-xl font-bold text-ink md:text-2xl">{t.price}</div>
+                  <div className="font-mono text-xs text-stone md:mt-1 md:text-sm">{t.perSqFt}</div>
                 </div>
               </div>
-              <div className="text-right md:text-left md:mt-4">
-                <div className="font-mono text-xl font-bold text-ink md:text-2xl">{t.price}</div>
-                <div className="font-mono text-xs text-stone md:mt-1 md:text-sm">{t.perSqFt}</div>
-              </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
