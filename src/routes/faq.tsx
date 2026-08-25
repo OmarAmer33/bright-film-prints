@@ -23,7 +23,7 @@ function ConfirmPill() {
   );
 }
 
-type QA = { q: string; a: React.ReactNode };
+type QA = { q: string; a: ReactNode };
 
 const FAQS: QA[] = [
   {
