@@ -204,9 +204,40 @@
   50%      { opacity: 0.45; transform: scale(0.85); }
 }
 
+/*
+ * Scroll-reveal, class-gated for progressive enhancement.
+ * Without the `reveal-ready` class on <html> (JS disabled), .bt-reveal stays
+ * fully visible — content is never hidden behind JS.
+ */
+.reveal-ready .bt-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.reveal-ready .bt-reveal[data-revealed="true"] {
+  opacity: 1;
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bt-animate-pulse,
   .bt-animate-float {
     animation: none !important;
   }
+
+  .reveal-ready .bt-reveal,
+  .bt-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .bt-hover-lift:hover {
+    transform: none !important;
+  }
+
+  .bt-media-slot video {
+    display: none;
+  }
 }
+
