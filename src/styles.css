@@ -148,20 +148,24 @@
 }
 
 /*
- * Whisper-faint sunburst corona — echoes the Bright Transfers logo.
- * Two stacked layers: radiating conic rays over a warm radial glow,
- * softened by a radial mask so no hard circular edge is visible.
- * The -webkit-mask-image prefix MUST come first: iOS Safari ignores
- * the unprefixed property and would render the rays with a hard edge.
- * Size / opacity / blur are set inline per placement; this holds only
- * the background + mask. Opacity stays low so it sits behind content.
+ * Whisper-faint sunburst corona — echoes the Bright Transfers logo's spiky
+ * sun. Two stacked layers: radiating conic rays (ember) over a warm gold→sun
+ * radial glow. The mask is a RING, not a disc: it hides the dense core (where
+ * short rays just look like a solid blob) and reveals the mid-radius spikes
+ * that actually read as a corona, fading softly at the edge so there is no
+ * hard circle. The -webkit-mask-image prefix MUST come first — iOS Safari
+ * ignores the unprefixed property and would render a hard-edged disc on the
+ * exact device this gets tested on. Size / opacity / blur are set inline per
+ * placement; this holds only background + mask. Opacity stays low so it sits
+ * behind content. Rays are ember over a lighter gold glow so the spikes
+ * contrast instead of blending into the same family.
  */
 @utility bt-sunburst {
   background-image:
-    repeating-conic-gradient(from -12deg, var(--sun) 0deg 3deg, transparent 3deg 15deg),
-    radial-gradient(closest-side, var(--gold) 0%, var(--sun) 45%, var(--ember) 100%);
-  -webkit-mask-image: radial-gradient(closest-side, black 0%, black 38%, transparent 72%);
-  mask-image: radial-gradient(closest-side, black 0%, black 38%, transparent 72%);
+    repeating-conic-gradient(from -12deg, var(--ember) 0deg 2.5deg, transparent 2.5deg 13deg),
+    radial-gradient(closest-side, var(--gold) 0%, var(--sun) 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side, transparent 0%, black 28%, black 62%, transparent 86%);
+  mask-image: radial-gradient(closest-side, transparent 0%, black 28%, black 62%, transparent 86%);
 }
 
 @utility text-gradient-sun {
