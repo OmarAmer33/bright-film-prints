@@ -67,11 +67,7 @@ function PricingPage() {
 function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div
-        aria-hidden
-        className="bt-animate-float pointer-events-none absolute -top-40 right-[-10%] h-[460px] w-[460px] rounded-full opacity-20 blur-3xl"
-        style={{ backgroundImage: "var(--gradient-sun)" }}
-      />
+      <Sunburst float className="-top-40 right-[-10%] h-[460px] w-[460px] opacity-[0.09] blur-[2px]" />
       <div className="relative mx-auto max-w-6xl px-4 pb-12 pt-16 sm:px-6 sm:pt-24 md:pb-16 md:pt-28">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Pricing</p>
         <h1 className="mt-4 text-4xl text-ink sm:text-5xl">Pay by the square foot.</h1>
