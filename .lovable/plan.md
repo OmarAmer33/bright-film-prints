@@ -140,7 +140,8 @@ One clearly marked comment block in `index.tsx`:
 
 ## Files changed
 - `src/routes/index.tsx` — hero becomes two-column, adds `HeroPlaceholder` + swap comment, wraps sections in `Reveal`, adds hover-lift classes.
-- `src/components/brand/Reveal.tsx` — new, ~40 lines.
-- `src/styles.css` — extend the existing reduced-motion block only.
+- `src/components/brand/Reveal.tsx` — new, ~45 lines.
+- `src/styles.css` — add the `.reveal-ready` gating rules and extend the existing reduced-motion block.
+- `src/routes/__root.tsx` — one added inline `<script>` in head that sets the `reveal-ready` class; nothing else changes.
 
 Not touched: other routes, server code, pricing logic, `SiteHeader`/`SiteFooter`, `GradientButton`, `PriceTicker`, `TrustRow`.
