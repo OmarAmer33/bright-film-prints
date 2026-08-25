@@ -88,7 +88,7 @@ function FAQ() {
       <SiteHeader />
       <main className="flex-1">
         <section className="relative overflow-hidden">
-          <Sunburst rotate={14} className="-top-28 right-[-14%] h-[380px] w-[380px] opacity-[0.06] blur-[2px]" />
+          <Sunburst rotate={14} className="-top-28 right-[-14%] h-[380px] w-[380px] opacity-[0.10] blur-[2px]" />
           <div className="relative mx-auto max-w-5xl px-4 py-16 sm:px-6 md:py-24">
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">FAQ</p>
             <h1 className="mt-3 text-4xl text-ink sm:text-5xl">Questions, answered.</h1>
