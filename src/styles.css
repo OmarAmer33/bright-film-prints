@@ -147,6 +147,27 @@
   background-image: var(--gradient-sun);
 }
 
+/*
+ * Whisper-faint sunburst corona — echoes the Bright Transfers logo's spiky
+ * sun. Two stacked layers: radiating conic rays (ember) over a warm gold→sun
+ * radial glow. The mask is a RING, not a disc: it hides the dense core (where
+ * short rays just look like a solid blob) and reveals the mid-radius spikes
+ * that actually read as a corona, fading softly at the edge so there is no
+ * hard circle. The -webkit-mask-image prefix MUST come first — iOS Safari
+ * ignores the unprefixed property and would render a hard-edged disc on the
+ * exact device this gets tested on. Size / opacity / blur are set inline per
+ * placement; this holds only background + mask. Opacity stays low so it sits
+ * behind content. Rays are ember over a lighter gold glow so the spikes
+ * contrast instead of blending into the same family.
+ */
+@utility bt-sunburst {
+  background-image:
+    repeating-conic-gradient(from -12deg, var(--ember) 0deg 2.5deg, transparent 2.5deg 13deg),
+    radial-gradient(closest-side, var(--gold) 0%, var(--sun) 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side, transparent 0%, black 28%, black 62%, transparent 86%);
+  mask-image: radial-gradient(closest-side, transparent 0%, black 28%, black 62%, transparent 86%);
+}
+
 @utility text-gradient-sun {
   background-image: var(--gradient-sun);
   -webkit-background-clip: text;
