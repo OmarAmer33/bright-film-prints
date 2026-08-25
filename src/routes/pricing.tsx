@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
+import { Sunburst } from "@/components/brand/Sunburst";
 import { getPricing, type PricingPayload } from "@/lib/pricing.functions";
 
 const FALLBACK_TIERS = [
