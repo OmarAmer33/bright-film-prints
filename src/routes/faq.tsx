@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
+import { Sunburst } from "@/components/brand/Sunburst";
 
 export const Route = createFileRoute("/faq")({
   head: () => ({
@@ -86,26 +87,29 @@ function FAQ() {
     <div className="min-h-screen bg-paper text-ink flex flex-col">
       <SiteHeader />
       <main className="flex-1">
-        <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 md:py-24">
-          <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">FAQ</p>
-          <h1 className="mt-3 text-4xl text-ink sm:text-5xl">Questions, answered.</h1>
+        <section className="relative overflow-hidden">
+          <Sunburst rotate={14} className="-top-28 right-[-14%] h-[380px] w-[380px] opacity-[0.06] blur-[2px]" />
+          <div className="relative mx-auto max-w-5xl px-4 py-16 sm:px-6 md:py-24">
+            <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">FAQ</p>
+            <h1 className="mt-3 text-4xl text-ink sm:text-5xl">Questions, answered.</h1>
 
-          <div className="mt-10 divide-y divide-line border-t border-line">
-            {FAQS.map((f) => (
-              <div key={f.q} className="py-6">
-                <p className="font-medium text-ink">{f.q}</p>
-                <p className="mt-2 text-ink/70">{f.a}</p>
-              </div>
-            ))}
-          </div>
+            <div className="mt-10 divide-y divide-line border-t border-line">
+              {FAQS.map((f) => (
+                <div key={f.q} className="py-6">
+                  <p className="font-medium text-ink">{f.q}</p>
+                  <p className="mt-2 text-ink/70">{f.a}</p>
+                </div>
+              ))}
+            </div>
 
-          <div className="mt-10">
-            <Link
-              to="/contact"
-              className="inline-flex items-center rounded-pill border border-ink/15 px-6 py-3 text-sm font-bold text-ink transition-colors hover:border-ink/40 hover:bg-dawn"
-            >
-              Still stuck? Contact us →
-            </Link>
+            <div className="mt-10">
+              <Link
+                to="/contact"
+                className="inline-flex items-center rounded-pill border border-ink/15 px-6 py-3 text-sm font-bold text-ink transition-colors hover:border-ink/40 hover:bg-dawn"
+              >
+                Still stuck? Contact us →
+              </Link>
+            </div>
           </div>
         </section>
       </main>
