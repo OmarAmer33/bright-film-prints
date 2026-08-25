@@ -312,7 +312,7 @@ function ClosingCTA() {
       {/* Decorative sunburst glow behind the conversion headline. */}
       <div
         aria-hidden
-        className="bt-sunburst pointer-events-none absolute left-1/2 top-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 opacity-[0.07] blur-[18px]"
+        className="bt-sunburst pointer-events-none absolute left-1/2 top-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2 opacity-[0.08] blur-[3px]"
       />
       <Reveal>
         <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
