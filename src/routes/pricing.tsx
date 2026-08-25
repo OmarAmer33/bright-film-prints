@@ -69,7 +69,7 @@ function Hero() {
   return (
     <section className="relative overflow-hidden">
       <Sunburst float className="-top-40 right-[-10%] h-[460px] w-[460px] opacity-[0.11] blur-[2px]" />
-      <div className="relative mx-auto max-w-6xl px-4 pb-12 pt-16 sm:px-6 sm:pt-24 md:pb-16 md:pt-28">
+      <div className="relative mx-auto max-w-6xl px-4 pb-8 pt-12 sm:px-6 md:py-16">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Pricing</p>
         <h1 className="mt-4 text-4xl text-ink sm:text-5xl">Pay by the square foot.</h1>
         <p className="mt-5 max-w-2xl text-lg text-ink/70 sm:text-xl">
