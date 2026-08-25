@@ -4,14 +4,41 @@ Two independent parts, both scoped to `src/routes/index.tsx`, `src/styles.css`, 
 
 ## Part 1 — Motion on what's already there
 
-### Mechanism: a `Reveal` wrapper
-New file `src/components/brand/Reveal.tsx`:
+### Mechanism: a class-gated `Reveal` wrapper (visible without JS)
 
-- Renders a `div` (element configurable) that starts at `opacity-0` and holds its own space (no layout shift).
-- One `IntersectionObserver` per element, `threshold: 0.15`, `rootMargin: "0px 0px -10% 0px"`, unobserves after the first intersection (reveal once, never replay on scroll-up).
-- On intersect it adds `animate-in fade-in slide-in-from-bottom-3` (tw-animate-css utilities) with duration/delay from props.
-- SSR-safe: if the observer never fires (JS off, or reduced motion), CSS in the reduced-motion block forces `opacity: 1` so content is never invisible. The component also checks `matchMedia("(prefers-reduced-motion: reduce)")` and reveals immediately without animation classes.
+Progressive enhancement — the hidden starting state only exists for JS-enabled clients.
+
+**1. Marker class.** A tiny inline script in the root document head (`src/routes/__root.tsx`) runs before first paint:
+
+```html
+<script>document.documentElement.classList.add('reveal-ready')</script>
+```
+
+This is the one file outside `index.tsx` / `styles.css` / the new component that gets touched — a single added `<script>` tag, nothing else in `__root.tsx` changes. (Alternative if you'd rather not touch `__root.tsx`: set the class at module load inside `Reveal.tsx`; slightly later, so a brief flash of already-visible content is possible on slow first loads. Recommendation: the head script.)
+
+**2. CSS gating** in `src/styles.css`:
+
+```css
+.reveal-ready .bt-reveal { opacity: 0; transform: translateY(12px); }
+.reveal-ready .bt-reveal[data-revealed="true"] { opacity: 1; transform: none; }
+```
+
+So the default/SSR markup carries no `opacity-0` — with JS off, `reveal-ready` is never added and every section renders fully visible immediately.
+
+**3. `src/components/brand/Reveal.tsx`** (new):
+
+- Renders a `div` with class `bt-reveal` and `data-revealed="false"`; holds its own space (no layout shift).
+- One `IntersectionObserver` per element, `threshold: 0.15`, `rootMargin: "0px 0px -10% 0px"`, unobserves after first intersection (reveal once, never replays on scroll-up).
+- On intersect: sets `data-revealed="true"` and adds `animate-in fade-in slide-in-from-bottom-3` (tw-animate-css) with duration/delay from props.
+- `matchMedia("(prefers-reduced-motion: reduce)")` → reveal immediately on mount, no animation classes.
+- No `IntersectionObserver` support → reveal immediately on mount.
 - Props: `delay` (ms, default 0), `duration` (ms, default 500), `className`.
+
+**Behaviour confirmation**
+- JS disabled → `reveal-ready` absent → all homepage sections fully visible, no animation.
+- Reduced motion → visible, no animation (CSS block below also hard-overrides).
+- Normal → head script sets the class before paint, so sections start hidden without a flash of visible-then-hidden, then fade/slide in once as they enter the viewport.
+
 
 ### Timing / easing
 - Duration: **500ms**, easing **ease-out** (`--tw-ease` via `ease-out` utility).
@@ -113,7 +140,8 @@ One clearly marked comment block in `index.tsx`:
 
 ## Files changed
 - `src/routes/index.tsx` — hero becomes two-column, adds `HeroPlaceholder` + swap comment, wraps sections in `Reveal`, adds hover-lift classes.
-- `src/components/brand/Reveal.tsx` — new, ~40 lines.
-- `src/styles.css` — extend the existing reduced-motion block only.
+- `src/components/brand/Reveal.tsx` — new, ~45 lines.
+- `src/styles.css` — add the `.reveal-ready` gating rules and extend the existing reduced-motion block.
+- `src/routes/__root.tsx` — one added inline `<script>` in head that sets the `reveal-ready` class; nothing else changes.
 
 Not touched: other routes, server code, pricing logic, `SiteHeader`/`SiteFooter`, `GradientButton`, `PriceTicker`, `TrustRow`.
