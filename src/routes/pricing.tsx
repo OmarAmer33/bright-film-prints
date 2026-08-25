@@ -204,7 +204,7 @@ function HowPricingWorks() {
     },
   ];
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-16">
       <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">How our pricing works</p>
       <h2 className="mt-3 text-3xl text-ink sm:text-4xl">Simple, by the foot.</h2>
       <div className="mt-10 grid gap-5 md:grid-cols-3">
