@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
+import { Sunburst } from "@/components/brand/Sunburst";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-line bg-dawn/40">
-      <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center">
+    <footer className="relative overflow-hidden border-t border-line bg-dawn/40">
+      <Sunburst className="-bottom-40 right-[-8%] h-[420px] w-[420px] opacity-[0.05] blur-[3px]" />
+      <div className="relative mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center">
         <div>
           <div className="font-display text-base font-extrabold text-ink">
             Bright <span className="text-gradient-sun">Transfers</span>
