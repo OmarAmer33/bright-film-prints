@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
