@@ -98,7 +98,7 @@ function PricingTable({
 }) {
   return (
     <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-16">
-      <div className="rounded-card border border-line bg-paper p-2 shadow-warm/40 sm:p-4">
+      <div className="md:rounded-card md:border md:border-line md:bg-paper md:p-4 md:shadow-warm/40">
         {/* Desktop table (md+) */}
         <table className="hidden w-full border-collapse md:table">
           <thead>
