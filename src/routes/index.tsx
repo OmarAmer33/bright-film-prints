@@ -77,15 +77,8 @@ function Hero() {
       {/* Sunburst corona (faint, decorative) — replaces the plain gradient orbs,
           echoing the logo's spiky sun. Top-right keeps the gentle float; the
           bottom-left is static, rotated so the ray phase differs. */}
-      <div
-        aria-hidden
-        className="bt-animate-float bt-sunburst pointer-events-none absolute -top-40 right-[-10%] h-[560px] w-[560px] opacity-[0.16] blur-[1px]"
-      />
-      <div
-        aria-hidden
-        className="bt-sunburst pointer-events-none absolute -bottom-32 left-[-10%] h-[400px] w-[400px] opacity-[0.10] blur-[2px]"
-        style={{ transform: "rotate(18deg)" }}
-      />
+      <Sunburst float className="-top-40 right-[-10%] h-[560px] w-[560px] opacity-[0.16] blur-[1px]" />
+      <Sunburst rotate={18} className="-bottom-32 left-[-10%] h-[400px] w-[400px] opacity-[0.10] blur-[2px]" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-20 pt-16 sm:px-6 sm:pt-24 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:pb-28 md:pt-28">
         <div>
