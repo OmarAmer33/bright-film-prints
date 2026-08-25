@@ -9,7 +9,11 @@ Echo the logo's spiky sun corona in two places only, using existing brand tokens
 - A single decorative `<div>` with two stacked background layers:
   1. `repeating-conic-gradient(from -12deg, var(--sun) 0deg 3deg, transparent 3deg 15deg)` — 24 wedge rays, matching the corona's spiky rhythm.
   2. `radial-gradient` in `--gradient-sun` colors underneath, so the ray field sits inside a warm glow rather than a hard disc.
-- `mask-image: radial-gradient(closest-side, black 0%, black 38%, transparent 72%)` so rays fade out before their edges — no visible circular boundary, no hard geometry.
+- Radial mask so rays fade out before their edges — no visible circular boundary, no hard geometry. Both prefixes are required; iOS Safari (WebKit) ignores unprefixed `mask-image`, which would render the conic rays with a hard circular edge on the exact device this gets tested on. The prefixed version comes first:
+  ```css
+  -webkit-mask-image: radial-gradient(closest-side, black 0%, black 38%, transparent 72%);
+  mask-image:         radial-gradient(closest-side, black 0%, black 38%, transparent 72%);
+  ```
 - Light `blur` (8–14px) to keep the rays as a suggestion rather than a graphic.
 
 Why not the alternatives: inline SVG would need hand-authored path geometry and its own gradient defs (more markup, no gain at this opacity); `repeating-linear-gradient` produces parallel stripes, not radiating rays. `repeating-conic-gradient` is one CSS declaration, resolution-independent, and reads correctly as a corona.
