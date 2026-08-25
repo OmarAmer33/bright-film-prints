@@ -106,9 +106,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        {/* Gates the scroll-reveal hidden state to JS-enabled clients only. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.classList.add('reveal-ready')",
+          }}
+        />
       </head>
       <body>
         {children}

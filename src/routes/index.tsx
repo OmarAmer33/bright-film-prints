@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/brand/SiteFooter";
 import { PriceTicker } from "@/components/brand/PriceTicker";
 import { GradientButton } from "@/components/brand/GradientButton";
 import { TrustRow } from "@/components/brand/TrustRow";
+import { Reveal } from "@/components/brand/Reveal";
 import { getPricing, type PricingPayload } from "@/lib/pricing.functions";
 
 const FALLBACK_TIERS = [
@@ -85,53 +86,102 @@ function Hero() {
         style={{ backgroundImage: "var(--gradient-sun)" }}
       />
 
-      <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24 md:pb-28 md:pt-28">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">
-          DTF Gang Sheets
-        </p>
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-20 pt-16 sm:px-6 sm:pt-24 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:pb-28 md:pt-28">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">
+            DTF Gang Sheets
+          </p>
 
-        <h1 className="font-display-xl mt-5 text-[clamp(2.75rem,7vw,5.5rem)] text-ink">
-          Brighter prints at a{" "}
-          <span className="text-gradient-accent">brighter price.</span>
-        </h1>
+          <h1 className="font-display-xl mt-5 text-[clamp(2.75rem,7vw,5.5rem)] text-ink">
+            Brighter prints at a{" "}
+            <span className="text-gradient-accent">brighter price.</span>
+          </h1>
 
-        <p className="mt-6 max-w-2xl text-lg text-ink/70 sm:text-xl">
-          Hot-peel DTF gang sheets priced by the square foot — the bigger the
-          sheet, the lower the rate. 3 ft minimum, shipped fast.
-        </p>
+          <p className="mt-6 max-w-2xl text-lg text-ink/70 sm:text-xl">
+            Hot-peel DTF gang sheets priced by the square foot — the bigger the
+            sheet, the lower the rate. 3 ft minimum, shipped fast.
+          </p>
 
 
-        <div className="mt-9 flex flex-wrap items-center gap-3">
-          <GradientButton to="/build" size="lg">
-            Build a gang sheet →
-          </GradientButton>
-          <GradientButton to="/upload" size="lg" variant="outline">
-            Upload your own
-          </GradientButton>
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <GradientButton to="/build" size="lg">
+              Build a gang sheet →
+            </GradientButton>
+            <GradientButton to="/upload" size="lg" variant="outline">
+              Upload your own
+            </GradientButton>
+          </div>
+
+          <div className="mt-8">
+            <PriceTicker size="3 ft" price="$19.99" perSqFt="$3.63 / sq ft" />
+          </div>
         </div>
 
-        <div className="mt-8">
-          <PriceTicker size="3 ft" price="$19.99" perSqFt="$3.63 / sq ft" />
+        {/* Media slot — aspect ratio reserves the box so swapping media causes no layout shift. */}
+        <div className="bt-media-slot relative order-last mx-auto aspect-[4/3] w-full max-h-[280px] overflow-hidden rounded-card border border-line bg-dawn shadow-warm md:order-none md:max-h-none md:aspect-[16/10]">
+          {/* CHAI-CONFIRM: HERO MEDIA SWAP POINT — replace <HeroPlaceholder /> with ONE of:
+                <img src={heroPhoto} alt="Bright Transfers pressing a DTF transfer" loading="lazy" decoding="async"
+                     className="absolute inset-0 h-full w-full object-cover" />
+              or
+                <video className="absolute inset-0 h-full w-full object-cover"
+                       poster={heroPoster} src={heroClip}
+                       muted loop playsInline autoPlay preload="none" />
+              Keep the wrapper's aspect-ratio classes — they reserve the box and prevent CLS.
+              Video is hidden under prefers-reduced-motion (see styles.css), so always supply a poster. */}
+          <HeroPlaceholder />
         </div>
       </div>
     </section>
   );
 }
 
+/* CHAI-CONFIRM: BRANDED PLACEHOLDER — staged for real press-room photography/video.
+   Pure brand tokens + CSS, no stock or generated imagery. Delete when media lands. */
+function HeroPlaceholder() {
+  return (
+    <div aria-hidden className="absolute inset-0">
+      <div
+        className="absolute inset-0 opacity-25"
+        style={{ backgroundImage: "var(--gradient-sun)" }}
+      />
+      <div
+        className="absolute inset-0 opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, var(--ink) 0 1px, transparent 1px 34px), repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 34px)",
+        }}
+      />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-ink/60">
+          Press room
+        </p>
+        <p className="font-display text-lg font-extrabold text-ink/80 sm:text-xl">
+          Real print-floor photography lands here.
+        </p>
+        <span className="inline-flex items-center rounded-pill border border-dashed border-stone/50 bg-paper/70 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide text-stone">
+          confirm
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function TrustBand() {
   return (
-    <section className="border-y border-line bg-dawn/50">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <TrustRow
-          items={[
-            { icon: <Dot />, label: "Hot-peel premium film" },
-            { icon: <Dot />, label: "Vivid 5-color print" },
-            { icon: <Dot />, label: "Free shipping over $75" },
-            { icon: <Dot />, label: "Pressed & shipped fast" },
-          ]}
-        />
-      </div>
-    </section>
+    <Reveal>
+      <section className="border-y border-line bg-dawn/50">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+          <TrustRow
+            items={[
+              { icon: <Dot />, label: "Hot-peel premium film" },
+              { icon: <Dot />, label: "Vivid 5-color print" },
+              { icon: <Dot />, label: "Free shipping over $75" },
+              { icon: <Dot />, label: "Pressed & shipped fast" },
+            ]}
+          />
+        </div>
+      </section>
+    </Reveal>
   );
 }
 
@@ -162,22 +212,23 @@ function HowItWorks() {
   ];
   return (
     <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
-      <div className="flex items-end justify-between gap-6">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">How it works</p>
-          <h2 className="mt-3 text-3xl text-ink sm:text-4xl">From file to fabric in three steps.</h2>
+      <Reveal>
+        <div className="flex items-end justify-between gap-6">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">How it works</p>
+            <h2 className="mt-3 text-3xl text-ink sm:text-4xl">From file to fabric in three steps.</h2>
+          </div>
         </div>
-      </div>
+      </Reveal>
       <ol className="mt-10 grid gap-5 md:grid-cols-3">
-        {steps.map((s) => (
-          <li
-            key={s.n}
-            className="rounded-card border border-line bg-paper p-6 shadow-warm/40 transition-shadow hover:shadow-warm"
-          >
-            <div className="font-mono text-sm text-stone">{s.n}</div>
-            <h3 className="mt-2 text-xl text-ink">{s.title}</h3>
-            <p className="mt-2 text-ink/70">{s.body}</p>
-          </li>
+        {steps.map((s, i) => (
+          <Reveal key={s.n} delay={i * 90}>
+            <li className="bt-hover-lift h-full rounded-card border border-line bg-paper p-6 shadow-warm/40 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-warm motion-reduce:hover:translate-y-0">
+              <div className="font-mono text-sm text-stone">{s.n}</div>
+              <h3 className="mt-2 text-xl text-ink">{s.title}</h3>
+              <p className="mt-2 text-ink/70">{s.body}</p>
+            </li>
+          </Reveal>
         ))}
       </ol>
     </section>
@@ -202,45 +253,49 @@ function PricingTeaser({ tiers: liveTiers }: { tiers: { size_ft: number; price: 
   return (
     <section className="bg-dawn/40 border-y border-line">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Pricing</p>
-            <h2 className="mt-3 text-3xl text-ink sm:text-4xl">Pay by the square foot.</h2>
-            <p className="mt-3 max-w-xl text-ink/70">
-              The bigger the sheet, the lower the rate. No hidden setup, no per-color fees.
-            </p>
+        <Reveal>
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Pricing</p>
+              <h2 className="mt-3 text-3xl text-ink sm:text-4xl">Pay by the square foot.</h2>
+              <p className="mt-3 max-w-xl text-ink/70">
+                The bigger the sheet, the lower the rate. No hidden setup, no per-color fees.
+              </p>
+            </div>
+            <GradientButton to="/pricing" variant="outline">
+              See full pricing
+            </GradientButton>
           </div>
-          <GradientButton to="/pricing" variant="outline">
-            See full pricing
-          </GradientButton>
-        </div>
+        </Reveal>
 
         <div className="mt-10 grid gap-4 md:grid-cols-3 md:gap-5">
-          {tiers.map((t) => (
-            <div
-              key={t.size}
-              className={
-                "rounded-card border bg-paper " +
-                "flex items-center justify-between gap-3 px-5 py-4 " +
-                "md:flex-col md:items-stretch md:justify-start md:gap-0 md:p-6 " +
-                (t.featured
-                  ? "border-ember/40 shadow-glow ring-1 ring-ember/20"
-                  : "border-line shadow-warm/30")
-              }
-            >
-              <div className="flex items-center gap-2 md:block">
-                <div className="font-display text-2xl font-extrabold text-ink md:text-3xl md:order-2 md:mt-2">
-                  {t.size}
+          {tiers.map((t, i) => (
+            <Reveal key={t.size} delay={i * 90}>
+              <div
+                className={
+                  "bt-hover-lift h-full rounded-card border bg-paper " +
+                  "flex items-center justify-between gap-3 px-5 py-4 " +
+                  "transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 " +
+                  "md:flex-col md:items-stretch md:justify-start md:gap-0 md:p-6 " +
+                  (t.featured
+                    ? "border-ember/40 shadow-glow ring-1 ring-ember/20"
+                    : "border-line shadow-warm/30 hover:shadow-warm")
+                }
+              >
+                <div className="flex items-center gap-2 md:block">
+                  <div className="font-display text-2xl font-extrabold text-ink md:text-3xl md:order-2 md:mt-2">
+                    {t.size}
+                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone md:order-1 md:text-xs">
+                    {t.featured ? "Best value" : "Length"}
+                  </div>
                 </div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone md:order-1 md:text-xs">
-                  {t.featured ? "Best value" : "Length"}
+                <div className="text-right md:text-left md:mt-4">
+                  <div className="font-mono text-xl font-bold text-ink md:text-2xl">{t.price}</div>
+                  <div className="font-mono text-xs text-stone md:mt-1 md:text-sm">{t.perSqFt}</div>
                 </div>
               </div>
-              <div className="text-right md:text-left md:mt-4">
-                <div className="font-mono text-xl font-bold text-ink md:text-2xl">{t.price}</div>
-                <div className="font-mono text-xs text-stone md:mt-1 md:text-sm">{t.perSqFt}</div>
-              </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -252,20 +307,22 @@ function ClosingCTA() {
   // Gradient restraint: dawn-tinted band with a single gradient element (the button).
   return (
     <section className="bg-dawn">
-      <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
-        <h2 className="text-3xl text-ink sm:text-4xl md:text-5xl">
-          Ready to see your art on a shirt?
-        </h2>
-        <p className="mt-4 max-w-xl text-lg text-ink/70">
-          Upload a PNG, pick a size, and we'll get it printed and on its way.
-        </p>
+      <Reveal>
+        <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
+          <h2 className="text-3xl text-ink sm:text-4xl md:text-5xl">
+            Ready to see your art on a shirt?
+          </h2>
+          <p className="mt-4 max-w-xl text-lg text-ink/70">
+            Upload a PNG, pick a size, and we'll get it printed and on its way.
+          </p>
 
-        <div className="mt-8">
-          <GradientButton to="/upload" size="lg">
-            Start your order →
-          </GradientButton>
+          <div className="mt-8">
+            <GradientButton to="/upload" size="lg">
+              Start your order →
+            </GradientButton>
+          </div>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }
