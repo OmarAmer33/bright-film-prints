@@ -69,7 +69,7 @@ function Hero() {
   return (
     <section className="relative overflow-hidden">
       <Sunburst float className="-top-40 right-[-10%] h-[460px] w-[460px] opacity-[0.11] blur-[2px]" />
-      <div className="relative mx-auto max-w-6xl px-4 pb-12 pt-16 sm:px-6 sm:pt-24 md:pb-16 md:pt-28">
+      <div className="relative mx-auto max-w-6xl px-4 pb-8 pt-12 sm:px-6 md:py-16">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Pricing</p>
         <h1 className="mt-4 text-4xl text-ink sm:text-5xl">Pay by the square foot.</h1>
         <p className="mt-5 max-w-2xl text-lg text-ink/70 sm:text-xl">
@@ -97,8 +97,8 @@ function PricingTable({
   lowestPerSqFt: number;
 }) {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-20">
-      <div className="rounded-card border border-line bg-paper p-2 shadow-warm/40 sm:p-4">
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-16">
+      <div className="md:rounded-card md:border md:border-line md:bg-paper md:p-4 md:shadow-warm/40">
         {/* Desktop table (md+) */}
         <table className="hidden w-full border-collapse md:table">
           <thead>
@@ -204,7 +204,7 @@ function HowPricingWorks() {
     },
   ];
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-16">
       <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">How our pricing works</p>
       <h2 className="mt-3 text-3xl text-ink sm:text-4xl">Simple, by the foot.</h2>
       <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -224,7 +224,7 @@ function HowPricingWorks() {
 
 function Callouts({ freeShip }: { freeShip: number }) {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-4 sm:px-6 md:py-8">
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-16">
       <div className="grid gap-5 md:grid-cols-2">
         <div className="rounded-card border border-line bg-paper p-6 shadow-warm/40">
           <h3 className="text-xl text-ink">Free shipping over ${freeShip}</h3>
@@ -244,7 +244,7 @@ function Callouts({ freeShip }: { freeShip: number }) {
 function ClosingCTA() {
   return (
     <section className="bg-dawn">
-      <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
+      <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-8 text-center sm:px-6 md:py-16">
         <h2 className="text-3xl text-ink sm:text-4xl md:text-5xl">Ready to print?</h2>
         <p className="mt-4 max-w-xl text-lg text-ink/70">
           Not sure what size you need? Upload your art and our calculator sizes the sheet for you.
