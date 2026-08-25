@@ -57,7 +57,7 @@ function HowItWorks() {
       <SiteHeader />
       <main className="flex-1">
         <section className="relative overflow-hidden">
-          <Sunburst rotate={10} className="-top-32 right-[-12%] h-[420px] w-[420px] opacity-[0.07] blur-[2px]" />
+          <Sunburst rotate={10} className="-top-32 right-[-12%] h-[420px] w-[420px] opacity-[0.11] blur-[2px]" />
           <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">How it works</p>
             <h1 className="mt-3 text-4xl text-ink sm:text-5xl">From your file to your door.</h1>
