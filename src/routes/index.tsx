@@ -79,7 +79,7 @@ function Hero() {
           bottom-left is static, rotated so the ray phase differs. */}
       <div
         aria-hidden
-        className="bt-animate-float bt-sunburst pointer-events-none absolute -top-40 right-[-10%] h-[560px] w-[560px] opacity-[0.14] blur-[5px]"
+        className="bt-animate-float bt-sunburst pointer-events-none absolute -top-40 right-[-10%] h-[560px] w-[560px] opacity-[0.16] blur-[1px]"
       />
       <div
         aria-hidden
