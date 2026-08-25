@@ -83,7 +83,7 @@ function Hero() {
       />
       <div
         aria-hidden
-        className="bt-sunburst pointer-events-none absolute -bottom-32 left-[-10%] h-[400px] w-[400px] opacity-[0.08] blur-[14px]"
+        className="bt-sunburst pointer-events-none absolute -bottom-32 left-[-10%] h-[400px] w-[400px] opacity-[0.10] blur-[2px]"
         style={{ transform: "rotate(18deg)" }}
       />
 
