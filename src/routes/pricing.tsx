@@ -244,7 +244,7 @@ function Callouts({ freeShip }: { freeShip: number }) {
 function ClosingCTA() {
   return (
     <section className="bg-dawn">
-      <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 md:py-28">
+      <div className="mx-auto flex max-w-4xl flex-col items-center px-4 py-8 text-center sm:px-6 md:py-16">
         <h2 className="text-3xl text-ink sm:text-4xl md:text-5xl">Ready to print?</h2>
         <p className="mt-4 max-w-xl text-lg text-ink/70">
           Not sure what size you need? Upload your art and our calculator sizes the sheet for you.
