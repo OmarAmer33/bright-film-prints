@@ -97,7 +97,7 @@ function PricingTable({
   lowestPerSqFt: number;
 }) {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-20">
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-16">
       <div className="rounded-card border border-line bg-paper p-2 shadow-warm/40 sm:p-4">
         {/* Desktop table (md+) */}
         <table className="hidden w-full border-collapse md:table">
