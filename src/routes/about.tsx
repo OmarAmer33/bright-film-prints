@@ -32,9 +32,6 @@ function About() {
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">About</p>
             <h1 className="mt-3 text-4xl text-ink sm:text-5xl">Built by printers, for printers.</h1>
 
-            <div className="mt-6 rounded-card border border-line bg-dawn p-4 text-sm text-ink/70">
-              Draft brand story — to confirm and personalize with Chai.
-            </div>
 
             <div className="mt-8 space-y-5 text-lg text-ink/70">
               <p>
