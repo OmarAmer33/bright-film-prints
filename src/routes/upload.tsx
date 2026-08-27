@@ -9,6 +9,7 @@ import { PRESETS, PresetPicker } from "@/components/upload/PresetPicker";
 import {
   computeSheet,
   computeWholesalerSheet,
+  priceBreakdown,
   USABLE_WIDTH,
   type SheetComputation,
 } from "@/lib/pricing-core";
@@ -178,14 +179,10 @@ function DiyFlow({
   );
 
   const livePricing = pricing?.tiers ?? [];
-  const liveLines = useMemo(() => {
-    const lookup = new Map(livePricing.map((r) => [r.size_ft, r.price]));
-    return comp.breakdown.map((b) => {
-      const unit = Number(lookup.get(b.size_ft) ?? 0);
-      return { ...b, unit_price: unit, line_total: unit * b.count };
-    });
-  }, [comp.breakdown, livePricing]);
-  const subtotal = liveLines.reduce((s, l) => s + l.line_total, 0);
+  const { lines: liveLines, subtotal } = useMemo(
+    () => priceBreakdown(comp.breakdown, livePricing),
+    [comp.breakdown, livePricing],
+  );
   const perPiece = qty > 0 ? subtotal / qty : 0;
 
   const effectiveDpi =
@@ -308,14 +305,10 @@ function WholesalerFlow({
 
   const comp = useMemo(() => computeWholesalerSheet({ length_in: lengthIn }), [lengthIn]);
   const livePricing = pricing?.tiers ?? [];
-  const lines = useMemo(() => {
-    const lookup = new Map(livePricing.map((r) => [r.size_ft, r.price]));
-    return comp.breakdown.map((b) => {
-      const unit = Number(lookup.get(b.size_ft) ?? 0);
-      return { ...b, unit_price: unit, line_total: unit * b.count };
-    });
-  }, [comp.breakdown, livePricing]);
-  const subtotal = lines.reduce((s, l) => s + l.line_total, 0);
+  const { lines, subtotal } = useMemo(
+    () => priceBreakdown(comp.breakdown, livePricing),
+    [comp.breakdown, livePricing],
+  );
 
   // Suggested length from uploaded sheet at 300 DPI (px / 300 = inches)
   const suggested =
