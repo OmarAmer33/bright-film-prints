@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { SiteHeader } from "@/components/brand/SiteHeader";
@@ -17,18 +17,21 @@ import { getPricing, getQuote, type PricingPayload } from "@/lib/pricing.functio
 import { useCart } from "@/lib/cart-store";
 
 export const Route = createFileRoute("/upload")({
+  validateSearch: (search: Record<string, unknown>): { mode?: "wholesaler" } => ({
+    mode: search.mode === "wholesaler" ? "wholesaler" : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Upload your art — Bright Transfers" },
+      { title: "Upload artwork or a gang sheet — Bright Transfers" },
       {
         name: "description",
         content:
-          "Upload a print-ready PNG, JPG, or PDF, pick a size, and see your DTF gang sheet priced in real time.",
+          "Upload a print-ready PNG, JPG, or PDF — a single design or a finished 22\"-wide gang sheet — and see your DTF price in real time.",
       },
-      { property: "og:title", content: "Upload your art — Bright Transfers" },
+      { property: "og:title", content: "Upload artwork or a gang sheet — Bright Transfers" },
       {
         property: "og:description",
-        content: "Upload, size, and price a DTF gang sheet in seconds.",
+        content: "Upload art or a finished gang sheet, and price DTF prints in seconds.",
       },
     ],
   }),
@@ -67,8 +70,8 @@ function UploadPage() {
             Upload your art, see your price.
           </h1>
           <p className="mt-4 text-lg text-ink/70">
-            DIY artists: drop a file, pick a print size, set quantity. Wholesalers: upload your
-            print-ready 22"-wide sheet and price by length.
+            Drop a single piece of artwork, pick a size and quantity — or upload a finished
+            22"-wide gang sheet and price it by length.
           </p>
         </header>
         <UploadFlow pricing={pricing} />
@@ -79,7 +82,11 @@ function UploadPage() {
 }
 
 function UploadFlow({ pricing }: { pricing: PricingPayload | null }) {
-  const [mode, setMode] = useState<"diy" | "wholesaler">("diy");
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/upload" });
+  const [mode, setMode] = useState<"diy" | "wholesaler">(
+    search.mode === "wholesaler" ? "wholesaler" : "diy"
+  );
   const [upload, setUpload] = useState<UploadResult | null>(null);
 
   return (
@@ -90,13 +97,20 @@ function UploadFlow({ pricing }: { pricing: PricingPayload | null }) {
             <button
               key={m}
               type="button"
-              onClick={() => setMode(m)}
+              onClick={() => {
+                setMode(m);
+                void navigate({
+                  to: ".",
+                  search: { mode: m === "wholesaler" ? "wholesaler" : undefined },
+                  replace: true,
+                });
+              }}
               className={
                 "rounded-pill px-4 py-1.5 text-sm font-medium transition-colors " +
                 (mode === m ? "bg-ink text-paper" : "text-ink/70 hover:text-ink")
               }
             >
-              {m === "diy" ? "DIY art" : "Wholesaler sheet"}
+              {m === "diy" ? "My artwork" : "My gang sheet"}
             </button>
           ))}
         </div>

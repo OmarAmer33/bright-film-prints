@@ -64,7 +64,7 @@ export function GradientButton(props: AsLink | AsAnchor | AsButton) {
     );
   }
   return (
-    <Link to={(props as AsLink).to} className={cls}>
+    <Link to={(props as AsLink).to} search={(props as AsLink).search} className={cls}>
       {children}
     </Link>
   );
