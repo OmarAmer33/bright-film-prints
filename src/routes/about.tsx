@@ -58,6 +58,12 @@ function About() {
             </div>
 
             <div className="mt-10">
+              <p className="text-lg text-ink/70">
+                From family reunions to a 16,000-shirt run for a voting-rights nonprofit, I've built my name over ten-plus years the honest way: word of mouth. Twenty years of fire service, father of three, and still obsessed with getting your order right.
+              </p>
+            </div>
+
+            <div className="mt-10">
               <Link
                 to="/how-it-works"
                 className="inline-flex items-center rounded-pill border border-ink/15 px-6 py-3 text-sm font-bold text-ink transition-colors hover:border-ink/40 hover:bg-dawn"
