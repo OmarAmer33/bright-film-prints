@@ -116,17 +116,13 @@ export function computeSheet(input: {
 export function breakdownForLength(length_in: number): SheetBreakdownLine[] {
   if (length_in <= 0) return [];
   if (length_in <= MAX_TIER_IN) {
-    return normalizeBreakdown([
-      { size_ft: inchesToFeet(snapToTier(length_in)), count: 1 },
-    ]);
+    return normalizeBreakdown([{ size_ft: snapToFoot(length_in), count: 1 }]);
   }
   const full30 = Math.floor(length_in / MAX_TIER_IN);
   const remainder_in = length_in - full30 * MAX_TIER_IN;
   const lines: SheetBreakdownLine[] = [{ size_ft: 30, count: full30 }];
   if (remainder_in > 0.0001) {
-    const remainder_size_in =
-      remainder_in <= MIN_TIER_IN ? MIN_TIER_IN : smallestTierFor(remainder_in);
-    lines.push({ size_ft: inchesToFeet(remainder_size_in), count: 1 });
+    lines.push({ size_ft: snapToFoot(remainder_in), count: 1 });
   }
   return normalizeBreakdown(lines);
 }
