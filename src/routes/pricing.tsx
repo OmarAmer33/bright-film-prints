@@ -84,6 +84,71 @@ function Hero() {
   );
 }
 
+function PriceByLength({ tiers }: { tiers: PricingRow[] }) {
+  const [feet, setFeet] = useState(6);
+  const price = priceForFeet(feet, tiers);
+  const afterRewards = price * 0.9;
+
+  return (
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-16">
+      <div className="rounded-card border border-line bg-paper p-6 shadow-warm/40 md:p-8">
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Price by the foot</p>
+        <h2 className="mt-3 text-3xl text-ink sm:text-4xl">Only pay for the length you print.</h2>
+
+        <div aria-live="polite" aria-atomic="true" className="mt-6">
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <span className="font-mono text-5xl font-bold text-ink sm:text-6xl">
+              ${price.toFixed(2)}
+            </span>
+            <span className="font-mono text-base text-ink/70">for a {feet} ft sheet</span>
+          </div>
+          <p className="mt-2 font-mono text-sm text-ink/70">
+            ${afterRewards.toFixed(2)} after 10% rewards
+          </p>
+        </div>
+
+        <div className="mt-6">
+          <label
+            htmlFor="price-by-length"
+            className="font-mono text-xs uppercase tracking-wide text-stone"
+          >
+            Sheet length — {feet} ft
+          </label>
+          <input
+            id="price-by-length"
+            type="range"
+            min={3}
+            max={30}
+            step={1}
+            value={feet}
+            onChange={(e) => setFeet(Number(e.target.value))}
+            className="bt-range mt-3 w-full"
+            aria-valuemin={3}
+            aria-valuemax={30}
+            aria-valuenow={feet}
+          />
+          <div className="mt-2 flex justify-between font-mono text-xs text-stone">
+            <span>3 ft</span>
+            <span>30 ft</span>
+          </div>
+        </div>
+
+        <p className="mt-5 text-ink/70">
+          Priced by the foot — no jumping to the next size up. You only pay for what you use.
+        </p>
+        <div className="mt-4">
+          <Link
+            to="/upload"
+            className="inline-flex items-center rounded-pill bg-ink px-6 py-3 text-sm font-bold text-paper"
+          >
+            Start your sheet →
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function BestValuePill() {
   return (
     <span className="ml-2 inline-flex items-center rounded-pill bg-ink px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-paper align-middle">

@@ -262,3 +262,44 @@
   }
 }
 
+/*
+ * Brand-accented range input for the "Price by the foot" widget.
+ * Track uses --line (page divider), thumb uses --ember (brand accent).
+ * Cross-browser via the three vendor pseudo-elements.
+ */
+.bt-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  cursor: pointer;
+}
+.bt-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--ember);
+  border: 3px solid var(--paper);
+  box-shadow: 0 2px 6px oklch(0.625 0.244 32 / 0.35);
+  margin-top: -8px;
+}
+.bt-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--ember);
+  border: 3px solid var(--paper);
+  box-shadow: 0 2px 6px oklch(0.625 0.244 32 / 0.35);
+}
+.bt-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}
+.bt-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}
+
