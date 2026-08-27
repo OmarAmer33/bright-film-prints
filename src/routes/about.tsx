@@ -32,7 +32,6 @@ function About() {
             <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">About</p>
             <h1 className="mt-3 text-4xl text-ink sm:text-5xl">Built by printers, for printers.</h1>
 
-
             <div className="mt-8 space-y-5 text-lg text-ink/70">
               <p>
                 I'm Chai — the printer behind Bright Transfers. I grew up around this work: my dad was a graphic designer back in the early '80s, the guy a lot of South Florida businesses — especially minority-owned ones — went to when they needed their brand done right. That world was in the house long before it became mine.
