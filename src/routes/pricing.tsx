@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
 import { Sunburst } from "@/components/brand/Sunburst";
 import { getPricing, type PricingPayload } from "@/lib/pricing.functions";
+import { priceForFeet, type PricingRow } from "@/lib/pricing-core";
 
 const FALLBACK_TIERS = [
   { size_ft: 3, price: 19.99, per_sqft: 3.63 },
@@ -55,6 +57,7 @@ function PricingPage() {
       <SiteHeader />
       <main className="flex-1">
         <Hero />
+        <PriceByLength tiers={tiers} />
         <PricingTable tiers={tiers} lowestPerSqFt={lowestPerSqFt} />
         <HowPricingWorks />
         <Callouts freeShip={freeShip} />
