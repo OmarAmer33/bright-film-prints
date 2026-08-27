@@ -17,9 +17,9 @@ export const Route = createFileRoute("/about")({
 
 function About() {
   const values = [
-    { title: "Brighter prices, honestly.", body: "Pay by the square foot — the bigger the sheet, the lower the rate. No setup fees, no per-color upcharge." },
-    { title: "One product, done right.", body: "Standard 5-color, hot-peel DTF film. No glitter, no gimmicks — just clean transfers that press easy." },
-    { title: "Fast turnaround, real tracking.", body: "Printed and shipped fast, with tracking the moment it leaves the shop." },
+    { title: "Fast turnaround", body: "I want your film in your hands as fast as I can get it there. Speed isn't a feature here — it's the point." },
+    { title: "Color that's exactly right", body: "The small details are the whole job. Your prints come out the way you meant them to, every time." },
+    { title: "A real person behind it", body: "Pro or first-timer, you're dealing with someone who actually prints — and cares that it's right." },
   ];
 
   return (
