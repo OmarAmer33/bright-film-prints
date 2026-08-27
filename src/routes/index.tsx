@@ -99,11 +99,11 @@ function Hero() {
 
 
           <div className="mt-9 flex flex-wrap items-center gap-3">
-            <GradientButton to="/build" size="lg">
-              Build a gang sheet →
+            <GradientButton to="/upload" search={{ mode: "wholesaler" }} size="lg">
+              Upload your gang sheet →
             </GradientButton>
             <GradientButton to="/upload" size="lg" variant="outline">
-              Upload your own
+              Upload your artwork
             </GradientButton>
           </div>
 
