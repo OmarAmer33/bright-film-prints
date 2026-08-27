@@ -35,17 +35,16 @@ function About() {
 
             <div className="mt-8 space-y-5 text-lg text-ink/70">
               <p>
-                Bright Transfers comes out of Complete Print, a Miramar, Florida print shop that's
-                been putting ink on apparel for years.
+                I'm Chai — the printer behind Bright Transfers. I grew up around this work: my dad was a graphic designer back in the early '80s, the guy a lot of South Florida businesses — especially minority-owned ones — went to when they needed their brand done right. That world was in the house long before it became mine.
               </p>
               <p>
-                We started Bright Transfers with one idea: make DTF gang sheets brighter, cheaper,
-                and simpler than anyone else. No bloated catalog, no specialty upsells — just great
-                transfers at a fair price, shipped fast.
+                I spent twenty years as a firefighter. When I finally built something of my own, I went back to what I knew — I bought a retiring family friend's manual screen press, found a dryer at a local church, and started printing shirts one at a time. My first-ever online customer took a chance on a stranger; that first job took me eight hours, and I made sure every bit of it was right. She's been like family ever since.
               </p>
               <p>
-                Whether you're a wholesale printer ordering by the roll or a family making shirts for
-                a reunion, the process is the same: upload, order, press.
+                I ran that manual press for more than ten years, moved to automatic, and in 2019 switched to DTF printing — and I haven't looked back. I still run Complete Print for the shirt side. Bright Transfers is where the focus lives now: gang sheets, done right.
+              </p>
+              <p>
+                I fell in love with gang sheets because the work is cleaner and the people are my people — other printers who know the industry and speak the language. I know what you're up against: the rush orders, the last-minute changes, the customer who needed it yesterday. So I built Bright Transfers to be the opposite of corporate and cookie-cutter. Call it the printer's printer.
               </p>
             </div>
 
