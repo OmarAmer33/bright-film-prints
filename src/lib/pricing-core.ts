@@ -139,6 +139,29 @@ export function computeWholesalerSheet(input: { length_in: number }): SheetCompu
 
 export type PricingRow = { size_ft: number; price: number; per_sqft: number };
 
+export function priceForFeet(feet: number, pricing: PricingRow[]): number {
+  const anchors = [...pricing]
+    .map((r) => ({ size_ft: Number(r.size_ft), price: Number(r.price) }))
+    .filter((r) => r.size_ft > 0 && Number.isFinite(r.price))
+    .sort((a, b) => a.size_ft - b.size_ft);
+  if (!anchors.length) return 0;
+  const f = Number(feet) || 0;
+  if (f <= anchors[0].size_ft) return anchors[0].price;
+  const last = anchors[anchors.length - 1];
+  if (f >= last.size_ft) return last.price;
+  for (let i = 0; i < anchors.length - 1; i++) {
+    const lo = anchors[i];
+    const hi = anchors[i + 1];
+    if (f >= lo.size_ft && f <= hi.size_ft) {
+      if (f === lo.size_ft) return lo.price;
+      if (f === hi.size_ft) return hi.price;
+      const t = (f - lo.size_ft) / (hi.size_ft - lo.size_ft);
+      return Number((lo.price + t * (hi.price - lo.price)).toFixed(2));
+    }
+  }
+  return last.price;
+}
+
 export type PricedLine = {
   size_ft: number;
   unit_price: number;
