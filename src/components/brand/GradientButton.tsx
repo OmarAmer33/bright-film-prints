@@ -30,7 +30,7 @@ type CommonProps = {
   className?: string;
 };
 
-type AsLink = CommonProps & { to: LinkProps["to"]; href?: never; onClick?: never; disabled?: never };
+type AsLink = CommonProps & { to: LinkProps["to"]; search?: LinkProps["search"]; href?: never; onClick?: never; disabled?: never };
 type AsAnchor = CommonProps & { href: string; to?: never; onClick?: never; disabled?: never };
 type AsButton = CommonProps & {
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
