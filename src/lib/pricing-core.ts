@@ -34,6 +34,13 @@ export function snapToTier(inches: number): number {
   return MAX_TIER_IN;
 }
 
+export function snapToFoot(inches: number): number {
+  const feet = Math.ceil((Number(inches) || 0) / 12);
+  if (feet <= 3) return 3;
+  if (feet >= 30) return 30;
+  return feet;
+}
+
 /**
  * Merge same-size_ft entries into a single line (sum counts). Preserves the
  * order of first occurrence. e.g. [{30,2},{30,1},{5,1}] -> [{30,3},{5,1}].
