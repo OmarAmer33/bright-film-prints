@@ -7,9 +7,9 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About — Bright Transfers" },
-      { name: "description", content: "Bright Transfers prints DTF gang sheets bright and ships them fast." },
+      { name: "description", content: "Bright Transfers is Chai Footman's DTF gang-sheet shop in South Florida — a printer's printer built on quality, fast turnaround, and fair prices." },
       { property: "og:title", content: "About — Bright Transfers" },
-      { property: "og:description", content: "Bright Transfers prints DTF gang sheets bright and ships them fast." },
+      { property: "og:description", content: "Bright Transfers is Chai Footman's DTF gang-sheet shop in South Florida — a printer's printer built on quality, fast turnaround, and fair prices." },
     ],
   }),
   component: About,
