@@ -180,10 +180,9 @@ export function priceBreakdown(
   breakdown: SheetBreakdownLine[],
   pricing: PricingRow[],
 ): { lines: PricedLine[]; subtotal: number } {
-  const lookup = new Map(pricing.map((r) => [r.size_ft, r.price]));
   const normalized = normalizeBreakdown(breakdown);
   const lines: PricedLine[] = normalized.map((b) => {
-    const unit_price = Number(lookup.get(b.size_ft) ?? 0);
+    const unit_price = priceForFeet(b.size_ft, pricing);
     return {
       size_ft: b.size_ft,
       unit_price,
