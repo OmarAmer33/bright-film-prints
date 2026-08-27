@@ -89,7 +89,12 @@ Both client live-display and server-authoritative pricing flow through `pricing-
 
 ## Verification
 - `tsgo` typecheck on the project.
-- Spot-check: a 5 ft sheet now prices via interpolation between the 5 ft and 7 ft anchors (or whichever brackets it falls in) rather than snapping to a tier.
+- Anchor behavior is exact, NOT interpolated: every anchor foot (3, 5, 7, 10, 15, 20, 30) returns its `pricing_config` price unchanged, via the `if (f === lo.size_ft) return lo.price` / `if (f === hi.size_ft) return hi.price` guards plus the endpoint clamps in `priceForFeet`.
+- Interpolation happens ONLY at non-anchor feet. Confirm:
+  - 5 ft = exactly $30.99 (anchor, unchanged)
+  - 10 ft = exactly $54.99 (anchor, unchanged)
+  - 4 ft = $25.49 (interpolated between 3 ft and 5 ft)
+  - 6 ft = $35.99 (interpolated between 5 ft and 7 ft)
 - Confirm `breakdownsEqual` still resolves identical normalized breakdowns (sizes are still whole-foot `size_ft` values).
 
 ## Out of scope
