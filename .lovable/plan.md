@@ -49,12 +49,14 @@ Page 1 only. `doc.getPage(0)` is used and the remaining pages are ignored — a 
 
 One scope note: `UploadResult` is declared in `src/components/upload/DropZone.tsx`, which is on the do-not-touch list. So instead of editing that type, `upload.tsx` declares a local widening type — `type UploadWithInches = UploadResult & { width_in?: number | null; height_in?: number | null }` — and reads through it. No DropZone change.
 
+**Named assumption — DropZone pass-through.** The local widening type only works because DropZone.tsx line 31 parses the response body and line 35 hands that same object straight to `onUploaded` — it does not rebuild a fixed shape, so `width_in` / `height_in` survive at runtime even though they are absent from the `UploadResult` type. This is a load-bearing implicit dependency: if DropZone is ever changed to destructure or re-map the response, this breaks silently — no type error, no runtime error; the PDF path just falls back to pixels forever. The verification steps below therefore confirm `width_in` actually **arrives in WholesalerFlow** after a PDF upload, not merely that the API response contains it.
+
 In `WholesalerFlow`'s `detected` useMemo, before the pixel path:
 
 - If `width_in` and `height_in` are both present and > 0: `shortSide = min`, `longSide = max`, `suggestedIn = Math.round(longSide)`, `clampedIn = Math.min(360, Math.max(36, suggestedIn))`, `source: "file"`, no `dpi`.
 - Otherwise: the current pixel aspect-ratio path, unchanged, `source: "pixels"`.
 
-Hint text: for `source: "file"`, read `Detected from your PDF: {shortIn}″ × {clampedIn}″.` plus the existing clamp notes (3 ft minimum / 30 ft maximum), and **no DPI figure or low-res caution**. For `source: "pixels"`, the current hint renders unchanged.
+Hint text: for `source: "file"`, read `Detected from your PDF: {shortIn}″ × {clampedIn}″.` plus the existing clamp notes (3 ft minimum / 30 ft maximum), and **no DPI figure or low-res caution**. `shortIn` is the raw division result, so format it with `Number(shortSide.toFixed(1))` — at most one decimal, trailing `.0` dropped. An exact 22" sheet renders `22″ × 60″`; a slightly-off MediaBox (1581.6 pt) renders `22″ × 60″` still, and a genuinely odd width (21.5") renders `21.5″ × …` — never `21.97222222222″`. For `source: "pixels"`, the current hint renders unchanged.
 
 Unchanged: the length input, its `onChange`, the prefill `useEffect` (still keyed on `upload?.id`), the 36–360 clamp, and the cart label.
 
