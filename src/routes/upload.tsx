@@ -304,11 +304,20 @@ function DiyFlow({
   );
 }
 
+// Widened locally: the uploads API returns width_in/height_in for PDFs, and
+// DropZone passes the response object straight through to onUploaded, so the
+// fields arrive at runtime even though UploadResult (owned by DropZone.tsx)
+// doesn't declare them.
+type UploadWithInches = UploadResult & {
+  width_in?: number | null;
+  height_in?: number | null;
+};
+
 function WholesalerFlow({
   upload,
   pricing,
 }: {
-  upload: UploadResult | null;
+  upload: UploadWithInches | null;
   pricing: PricingPayload | null;
 }) {
   const quoteFn = useServerFn(getQuote);
@@ -403,8 +412,17 @@ function WholesalerFlow({
         </div>
         {detected ? (
           <p className="mt-2 text-xs text-stone">
-            Detected: 22″ × {detected.clampedIn}″ · ~{detected.dpi} DPI.
-            {detected.dpi < 150 && " Low resolution for print — consider re-exporting at a higher DPI."}
+            {detected.source === "file" ? (
+              <>
+                Detected from your PDF: {detected.shortIn}″ × {detected.clampedIn}″.
+              </>
+            ) : (
+              <>
+                Detected: 22″ × {detected.clampedIn}″ · ~{detected.dpi} DPI.
+                {detected.dpi < 150 &&
+                  " Low resolution for print — consider re-exporting at a higher DPI."}
+              </>
+            )}
             {detected.clampedIn > detected.suggestedIn &&
               " 3 ft minimum sheet applies."}
             {detected.clampedIn < detected.suggestedIn &&
