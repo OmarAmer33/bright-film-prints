@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 import { SiteFooter } from "@/components/brand/SiteFooter";
 import { GradientButton } from "@/components/brand/GradientButton";
@@ -324,9 +324,26 @@ function WholesalerFlow({
     [comp.breakdown, livePricing],
   );
 
-  // Suggested length from uploaded sheet at 300 DPI (px / 300 = inches)
-  const suggested =
-    upload?.height_px ? Math.round((upload.height_px / 300) * 10) / 10 : null;
+  // Detect sheet dimensions from the pixel aspect ratio (22" is always the short edge).
+  const detected = useMemo(() => {
+    const w = upload?.width_px;
+    const h = upload?.height_px;
+    if (!w || !h) return null;            // PDFs: dimensions not read
+    const shortSide = Math.min(w, h);      // the 22" edge
+    const longSide = Math.max(w, h);       // the length edge
+    const suggestedIn = Math.round((longSide * 22) / shortSide);
+    const clampedIn = Math.min(360, Math.max(36, suggestedIn));
+    const dpi = Math.round(shortSide / 22);
+    return { suggestedIn, clampedIn, dpi };
+  }, [upload?.id]);
+
+  // Apply the detected length as a prefill on a NEW upload only (keyed on upload?.id),
+  // so a customer's manual edit survives re-renders. Null dims (PDFs) → leave field as-is.
+  useEffect(() => {
+    if (!detected) return;
+    setLengthIn(detected.clampedIn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [upload?.id]);
 
   async function addToCart() {
     if (!upload) return;
@@ -340,7 +357,7 @@ function WholesalerFlow({
         length_in: lengthIn,
         upload_id: upload.id,
         preview_url: upload.signed_url ?? undefined,
-        label: `Wholesaler sheet · ${lengthIn}″`,
+        label: `Gang sheet · ${lengthIn}″`,
         breakdown: q.lines.map((l) => ({
           size_ft: l.size_ft,
           count: l.count,
@@ -372,11 +389,21 @@ function WholesalerFlow({
             onChange={(v) => setLengthIn(Math.max(1, v))}
           />
         </div>
-        {suggested && (
+        {detected ? (
           <p className="mt-2 text-xs text-stone">
-            From your file at 300 DPI: ~{suggested}″ — confirm and adjust.
+            Detected: 22″ × {detected.clampedIn}″ · ~{detected.dpi} DPI.
+            {detected.dpi < 150 && " Low resolution for print — consider re-exporting at a higher DPI."}
+            {detected.clampedIn > detected.suggestedIn &&
+              " 3 ft minimum sheet applies."}
+            {detected.clampedIn < detected.suggestedIn &&
+              " 30 ft is the maximum single sheet — split longer runs into multiple sheets."}{" "}
+            Adjust if needed.
           </p>
-        )}
+        ) : upload ? (
+          <p className="mt-2 text-xs text-stone">
+            Length could not be detected from this file — enter it manually.
+          </p>
+        ) : null}
       </section>
 
       <div className="rounded-card border border-line bg-paper p-5">
