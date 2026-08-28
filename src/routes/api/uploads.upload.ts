@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { readImageDims } from "@/lib/image-dims.server";
+import { readImageDims, readPdfDims } from "@/lib/image-dims.server";
 
 const MAX_BYTES = 50 * 1024 * 1024;
 const ALLOWED = new Set(["image/png", "image/jpeg", "application/pdf"]);
