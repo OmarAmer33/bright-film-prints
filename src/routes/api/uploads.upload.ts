@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { readImageDims } from "@/lib/image-dims.server";
+import { readImageDims, readPdfDims } from "@/lib/image-dims.server";
 
 const MAX_BYTES = 50 * 1024 * 1024;
 const ALLOWED = new Set(["image/png", "image/jpeg", "application/pdf"]);
@@ -36,8 +36,11 @@ export const Route = createFileRoute("/api/uploads/upload")({
 
         const bytes = new Uint8Array(await file.arrayBuffer());
         let dims: { width: number; height: number } | null = null;
+        let pdfDims: { width_in: number; height_in: number } | null = null;
         if (mime === "image/png" || mime === "image/jpeg") {
           dims = readImageDims(bytes, mime);
+        } else if (mime === "application/pdf") {
+          pdfDims = await readPdfDims(bytes);
         }
 
         const ext = EXT[mime];
@@ -67,6 +70,8 @@ export const Route = createFileRoute("/api/uploads/upload")({
             file_url: path,
             width_px: dims?.width ?? null,
             height_px: dims?.height ?? null,
+            width_in: pdfDims?.width_in ?? null,
+            height_in: pdfDims?.height_in ?? null,
             status: "pending",
           })
           .select("id")
@@ -82,6 +87,8 @@ export const Route = createFileRoute("/api/uploads/upload")({
           signed_url: signed?.signedUrl ?? null,
           width_px: dims?.width ?? null,
           height_px: dims?.height ?? null,
+          width_in: pdfDims?.width_in ?? null,
+          height_in: pdfDims?.height_in ?? null,
           mime,
         });
       },

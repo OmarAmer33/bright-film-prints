@@ -344,10 +344,12 @@ export type Database = {
           customer_id: string | null
           detected_dpi: number | null
           file_url: string
+          height_in: number | null
           height_px: number | null
           id: string
           order_item_id: string | null
           status: Database["public"]["Enums"]["upload_status"]
+          width_in: number | null
           width_px: number | null
         }
         Insert: {
@@ -355,10 +357,12 @@ export type Database = {
           customer_id?: string | null
           detected_dpi?: number | null
           file_url: string
+          height_in?: number | null
           height_px?: number | null
           id?: string
           order_item_id?: string | null
           status?: Database["public"]["Enums"]["upload_status"]
+          width_in?: number | null
           width_px?: number | null
         }
         Update: {
@@ -366,10 +370,12 @@ export type Database = {
           customer_id?: string | null
           detected_dpi?: number | null
           file_url?: string
+          height_in?: number | null
           height_px?: number | null
           id?: string
           order_item_id?: string | null
           status?: Database["public"]["Enums"]["upload_status"]
+          width_in?: number | null
           width_px?: number | null
         }
         Relationships: [

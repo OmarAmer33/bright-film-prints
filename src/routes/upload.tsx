@@ -304,11 +304,20 @@ function DiyFlow({
   );
 }
 
+// Widened locally: the uploads API returns width_in/height_in for PDFs, and
+// DropZone passes the response object straight through to onUploaded, so the
+// fields arrive at runtime even though UploadResult (owned by DropZone.tsx)
+// doesn't declare them.
+type UploadWithInches = UploadResult & {
+  width_in?: number | null;
+  height_in?: number | null;
+};
+
 function WholesalerFlow({
   upload,
   pricing,
 }: {
-  upload: UploadResult | null;
+  upload: UploadWithInches | null;
   pricing: PricingPayload | null;
 }) {
   const quoteFn = useServerFn(getQuote);
@@ -324,17 +333,29 @@ function WholesalerFlow({
     [comp.breakdown, livePricing],
   );
 
-  // Detect sheet dimensions from the pixel aspect ratio (22" is always the short edge).
+  // Detect sheet dimensions. PDFs carry true physical inches; rasters fall back
+  // to the pixel aspect ratio (22" is always the short edge).
   const detected = useMemo(() => {
+    const inW = upload?.width_in;
+    const inH = upload?.height_in;
+    if (inW && inH && inW > 0 && inH > 0) {
+      const shortSide = Math.min(inW, inH);
+      const longSide = Math.max(inW, inH);
+      const suggestedIn = Math.round(longSide);
+      const clampedIn = Math.min(360, Math.max(36, suggestedIn));
+      // Displayed short side: at most one decimal, trailing ".0" dropped.
+      const shortIn = Number(shortSide.toFixed(1));
+      return { suggestedIn, clampedIn, shortIn, source: "file" as const };
+    }
     const w = upload?.width_px;
     const h = upload?.height_px;
-    if (!w || !h) return null;            // PDFs: dimensions not read
+    if (!w || !h) return null;
     const shortSide = Math.min(w, h);      // the 22" edge
     const longSide = Math.max(w, h);       // the length edge
     const suggestedIn = Math.round((longSide * 22) / shortSide);
     const clampedIn = Math.min(360, Math.max(36, suggestedIn));
     const dpi = Math.round(shortSide / 22);
-    return { suggestedIn, clampedIn, dpi };
+    return { suggestedIn, clampedIn, dpi, source: "pixels" as const };
   }, [upload?.id]);
 
   // Apply the detected length as a prefill on a NEW upload only (keyed on upload?.id),
@@ -391,8 +412,17 @@ function WholesalerFlow({
         </div>
         {detected ? (
           <p className="mt-2 text-xs text-stone">
-            Detected: 22″ × {detected.clampedIn}″ · ~{detected.dpi} DPI.
-            {detected.dpi < 150 && " Low resolution for print — consider re-exporting at a higher DPI."}
+            {detected.source === "file" ? (
+              <>
+                Detected from your PDF: {detected.shortIn}″ × {detected.clampedIn}″.
+              </>
+            ) : (
+              <>
+                Detected: 22″ × {detected.clampedIn}″ · ~{detected.dpi} DPI.
+                {detected.dpi < 150 &&
+                  " Low resolution for print — consider re-exporting at a higher DPI."}
+              </>
+            )}
             {detected.clampedIn > detected.suggestedIn &&
               " 3 ft minimum sheet applies."}
             {detected.clampedIn < detected.suggestedIn &&

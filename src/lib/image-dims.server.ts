@@ -1,6 +1,8 @@
 // Pure-JS image header parsers. PNG (IHDR) and JPEG (SOF). Fails gracefully:
 // on any error or unrecognized header, returns null so the upload still completes.
 
+import { PDFDocument, PDFName, PDFNumber } from "pdf-lib";
+
 export type Dims = { width: number; height: number } | null;
 
 export function readImageDims(bytes: Uint8Array, mime: string): Dims {
@@ -74,4 +76,38 @@ function readJpeg(b: Uint8Array): Dims {
     i += segLen;
   }
   return null;
+}
+
+/**
+ * Read a PDF's first page size in true physical inches (MediaBox is in 1/72" points).
+ * Honors /Rotate (90/270 swap) and /UserUnit (PDF 1.6+, required for sheets over
+ * 200" — the spec caps MediaBox units at 14400). Multi-page PDFs: page 1 only.
+ * Never throws; returns null on any parse failure (encrypted, corrupt, missing MediaBox).
+ */
+export async function readPdfDims(
+  bytes: Uint8Array,
+): Promise<{ width_in: number; height_in: number } | null> {
+  try {
+    const doc = await PDFDocument.load(bytes, {
+      ignoreEncryption: false,
+      updateMetadata: false,
+    });
+    const page = doc.getPage(0);
+    if (!page) return null;
+    const { width, height } = page.getMediaBox();
+    if (!width || !height) return null;
+    const rawUnit = page.node.get(PDFName.of("UserUnit"));
+    let userUnit =
+      rawUnit instanceof PDFNumber ? rawUnit.asNumber() : 1;
+    if (!Number.isFinite(userUnit) || userUnit <= 0) userUnit = 1;
+    const angle = ((page.getRotation().angle % 360) + 360) % 360;
+    let widthIn = (width / 72) * userUnit;
+    let heightIn = (height / 72) * userUnit;
+    if (angle === 90 || angle === 270) {
+      [widthIn, heightIn] = [heightIn, widthIn];
+    }
+    return { width_in: widthIn, height_in: heightIn };
+  } catch {
+    return null;
+  }
 }
