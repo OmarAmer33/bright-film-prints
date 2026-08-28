@@ -68,7 +68,9 @@ Unchanged: the length input, its `onChange`, the prefill `useEffect` (still keye
 
 - Worker smoke test (above) before anything else.
 - 22×60 in PDF (`[0 0 1584 4320]`) → field prefills 60, hint shows 22″ × 60″, no DPI.
+- End-to-end pass-through: after a PDF upload through DropZone, `width_in` / `height_in` are present on the object received by `WholesalerFlow` (verified in the running page, e.g. via the rendered hint showing the "file" path) — not just present in the API response body. Guards the named DropZone pass-through assumption.
 - Same MediaBox with `/Rotate 90` → still 60 (swap applied).
 - Long sheet using `/UserUnit 2` → doubled inches, not underbilled.
+- Off-1584 MediaBox (e.g. 1581.6 pt) → displayed short side is at most one decimal, no trailing `.0`.
 - Encrypted / corrupt PDF → null, field untouched, existing manual-entry note shows.
 - PNG and JPEG uploads → identical response and hint to today.
