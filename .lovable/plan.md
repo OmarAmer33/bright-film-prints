@@ -13,7 +13,7 @@ Scope: a single file, `src/routes/upload.tsx`. No other file changes.
 
 ### Edit A — Replace the `suggested` derivation (lines ~327–329)
 
-Replace the orientation- and DPI-blind `suggested` const with an aspect-ratio derivation. Use the uploaded sheet's pixel dimensions: the 22" edge is the **short** side, the length is the **long** side.
+Replace the orientation- and DPI-blind `suggested` const with an aspect-ratio derivation. Use the uploaded sheet's pixel dimensions: the 22" edge is the **short** side, the length is the **long** side. Compute the clamped length here, alongside `suggestedIn` and `dpi`, so the effect and the hint read the identical single value.
 
 ```tsx
 // Detect sheet dimensions from the pixel aspect ratio (22" is always the short edge).
@@ -24,14 +24,16 @@ const detected = useMemo(() => {
   const shortSide = Math.min(w, h);      // the 22" edge
   const longSide = Math.max(w, h);       // the length edge
   const suggestedIn = Math.round((longSide * 22) / shortSide);
+  const clampedIn = Math.min(360, Math.max(36, suggestedIn));
   const dpi = Math.round(shortSide / 22);
-  return { suggestedIn, dpi };
+  return { suggestedIn, clampedIn, dpi };
 }, [upload?.id]);
 ```
 
 Notes:
 - No `/300` divisor anywhere. A 3300×9000px (150 DPI) sheet and a 6600×18000px (300 DPI) sheet both report `60`.
 - Orientation-agnostic: 6600×18000 and 18000×6600 both yield `60`.
+- The clamp happens here, once. The effect and the hint both read `detected.clampedIn` — no second clamp anywhere.
 
 ### Edit B — Apply the prefill on a NEW upload only (new `useEffect`)
 
@@ -42,8 +44,7 @@ import { useEffect } from "react";   // add to the existing react import on line
 
 useEffect(() => {
   if (!detected) return;                          // PDF / null dims → do not touch the field
-  const clamped = Math.min(360, Math.max(36, detected.suggestedIn));
-  setLengthIn(clamped);
+  setLengthIn(detected.clampedIn);                 // clamped in Edit A, not here
 }, [upload?.id]);   // intentionally NOT depending on `detected` — see (a) below
 ```
 
@@ -51,20 +52,24 @@ useEffect(() => {
 
 (b) **Null/zero dimensions (PDFs):** `detected` returns `null` when `width_px` or `height_px` is falsy. The effect early-returns without calling `setLengthIn`, so the field keeps its current value. The hint block (Edit C) renders a "could not detect length, enter it manually" note instead of dimensions.
 
-(c) **Clamping:** `Math.min(360, Math.max(36, suggestedIn))` —
+(c) **Clamping behavior (single source in Edit A):** `Math.min(360, Math.max(36, suggestedIn))` —
    - Lower bound `36` (3 ft minimum). A sub-3ft detection (e.g. the rotated 22" case now correctly maps to length, but a tiny file could still compute below 36) is floored to 36.
    - Upper bound `360` (30 ft maximum, matching `snapToFoot`'s 3–30 ft range). A 40 ft detection caps at 360.
    - The field remains freely editable afterward (Edit D's `onChange` is untouched). The clamp only governs the prefill value.
 
 ### Edit C — Replace the hint block (lines ~375–379)
 
-Replace the static "From your file at 300 DPI" line with detected-dimension text. Show the detected sheet size (`22″ × {suggestedIn}″`), the implied DPI (`shortSide / 22`, rounded), and a low-res caution when DPI < 150. For PDFs, show a manual-entry note.
+Replace the static "From your file at 300 DPI" line with detected-dimension text. The hint shows the value that is **actually in the field and being priced** (`detected.clampedIn`), not the raw `suggestedIn`. The implied DPI (`shortSide / 22`, rounded) is shown, with a low-res caution when DPI < 150. When the clamp moved the number, a short note explains why, using wording consistent with the page's existing "3 ft minimum sheet" copy. For PDFs, show a manual-entry note.
 
 ```tsx
 {detected ? (
   <p className="mt-2 text-xs text-stone">
-    Detected: 22″ × {detected.suggestedIn}″ · ~{detected.dpi} DPI.
+    Detected: 22″ × {detected.clampedIn}″ · ~{detected.dpi} DPI.
     {detected.dpi < 150 && " Low resolution for print — consider re-exporting at a higher DPI."}
+    {detected.clampedIn > detected.suggestedIn &&
+      " 3 ft minimum sheet applies."}
+    {detected.clampedIn < detected.suggestedIn &&
+      " 30 ft is the maximum single sheet — split longer runs into multiple sheets."}
     Adjust if needed.
   </p>
 ) : upload ? (
@@ -73,6 +78,12 @@ Replace the static "From your file at 300 DPI" line with detected-dimension text
   </p>
 ) : null}
 ```
+
+Wording rationale:
+- Clamp raised (raw < 36): note reads `3 ft minimum sheet applies`, matching the existing "3 ft minimum sheet" line in the aside copy on this page.
+- Clamp lowered (raw > 360): note reads `30 ft is the maximum single sheet — split longer runs into multiple sheets.`
+- No clamping (`clampedIn === suggestedIn`): no extra note; hint reads as the base detected text only.
+- Low-DPI caution composes with both clamp notes (all are independent text fragments appended in the same `<p>`).
 
 No separate warning component, modal, or blocking state — text note in the existing hint area only.
 
@@ -92,12 +103,12 @@ DiyFlow, `src/lib/pricing-core.ts`, any `*.functions.ts` / `*.server.ts`, `getQu
 
 ## Verification
 
-- 6600×18000 sheet → field prefills to `60`, hint reads `22″ × 60″ · ~300 DPI`.
-- 18000×6600 (rotated) sheet → same `60`, same hint (orientation-agnostic).
-- 3300×9000 sheet (150 DPI) → field prefills to `60`, hint reads `~150 DPI` (no low-res caution, boundary case).
-- Sub-150 DPI sheet (e.g. 1650×4500, ~75 DPI) → prefill `60`, hint shows the low-res caution.
-- Tiny sheet computing < 36" → prefill clamps to `36`.
-- Huge sheet computing > 360" → prefill clamps to `360`.
+- 6600×18000 sheet → field prefills to `60`, hint reads `22″ × 60″ · ~300 DPI`, no clamp note.
+- 18000×6600 (rotated) sheet → same `60`, same hint (orientation-agnostic), no clamp note.
+- 3300×9000 sheet (150 DPI) → field prefills to `60`, hint reads `~150 DPI` (no low-res caution, boundary case), no clamp note.
+- Sub-150 DPI sheet (e.g. 1650×4500, ~75 DPI) → prefill `60`, hint shows the low-res caution, no clamp note.
+- 22" × 24" sheet (raw 24) → field prefills to `36`, hint reads `22″ × 36″ · ~…` plus `3 ft minimum sheet applies.`
+- 22" × 400" sheet (raw 400) → field prefills to `360`, hint reads `22″ × 360″ · ~…` plus the 30 ft maximum / split note.
 - PDF upload (null dims) → field stays at prior value, hint says "enter it manually".
 - Type a custom length after upload → value survives re-renders; only a new file re-applies the prefill.
 - Cart line item reads `Gang sheet · 60″`; `kind` and quote args unchanged.
