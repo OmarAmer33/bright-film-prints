@@ -70,6 +70,8 @@ export const Route = createFileRoute("/api/uploads/upload")({
             file_url: path,
             width_px: dims?.width ?? null,
             height_px: dims?.height ?? null,
+            width_in: pdfDims?.width_in ?? null,
+            height_in: pdfDims?.height_in ?? null,
             status: "pending",
           })
           .select("id")
@@ -85,6 +87,8 @@ export const Route = createFileRoute("/api/uploads/upload")({
           signed_url: signed?.signedUrl ?? null,
           width_px: dims?.width ?? null,
           height_px: dims?.height ?? null,
+          width_in: pdfDims?.width_in ?? null,
+          height_in: pdfDims?.height_in ?? null,
           mime,
         });
       },
