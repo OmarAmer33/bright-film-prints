@@ -1,6 +1,8 @@
 // Pure-JS image header parsers. PNG (IHDR) and JPEG (SOF). Fails gracefully:
 // on any error or unrecognized header, returns null so the upload still completes.
 
+import { PDFDocument, PDFName, PDFNumber } from "pdf-lib";
+
 export type Dims = { width: number; height: number } | null;
 
 export function readImageDims(bytes: Uint8Array, mime: string): Dims {

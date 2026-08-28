@@ -36,8 +36,11 @@ export const Route = createFileRoute("/api/uploads/upload")({
 
         const bytes = new Uint8Array(await file.arrayBuffer());
         let dims: { width: number; height: number } | null = null;
+        let pdfDims: { width_in: number; height_in: number } | null = null;
         if (mime === "image/png" || mime === "image/jpeg") {
           dims = readImageDims(bytes, mime);
+        } else if (mime === "application/pdf") {
+          pdfDims = await readPdfDims(bytes);
         }
 
         const ext = EXT[mime];
