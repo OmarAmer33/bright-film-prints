@@ -1,7 +1,7 @@
 // Pure-JS image header parsers. PNG (IHDR) and JPEG (SOF). Fails gracefully:
 // on any error or unrecognized header, returns null so the upload still completes.
 
-import { PDFDocument, PDFName, PDFNumber } from "pdf-lib";
+
 
 export type Dims = { width: number; height: number } | null;
 
@@ -88,6 +88,7 @@ export async function readPdfDims(
   bytes: Uint8Array,
 ): Promise<{ width_in: number; height_in: number } | null> {
   try {
+    const { PDFDocument, PDFName, PDFNumber } = await import("pdf-lib");
     const doc = await PDFDocument.load(bytes, {
       ignoreEncryption: false,
       updateMetadata: false,
