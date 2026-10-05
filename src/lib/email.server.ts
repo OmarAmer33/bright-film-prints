@@ -33,10 +33,13 @@ function siteOrigin(): string {
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   try {
+    const replyTo = replyToAddress();
+    const payload: Record<string, unknown> = { from: fromAddress(), to, subject, html };
+    if (replyTo) payload.reply_to = replyTo;
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",
       headers: { Authorization: `Bearer ${getResendKey()}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: fromAddress(), to, subject, html }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
