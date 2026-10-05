@@ -8,7 +8,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -38,7 +38,10 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   // Router may hand us a non-Error (error is typed unknown); normalize so the
   // reporting + console path always sees a real Error instance.
-  const err = error instanceof Error ? error : new Error(String(error));
+  const err = useMemo(
+    () => (error instanceof Error ? error : new Error(String(error))),
+    [error],
+  );
   console.error(err);
   const router = useRouter();
   useEffect(() => {
