@@ -8,6 +8,7 @@ import {
   type PricingRow,
   type Quote,
 } from "./pricing-core";
+import { resolveSheetLengthIn, UNREADABLE_SIZE_MSG } from "./sheet-length.server";
 
 function publicClient() {
   return createClient<Database>(
@@ -70,11 +71,11 @@ export type QuoteInput = {
   design_w?: number;
   design_h?: number;
   qty?: number;
-  length_in?: number;
+  upload_id?: string;
 };
 
 // Strict validator: ONLY dimensions and qty are accepted. Any client-sent
-// prices/tier names are silently dropped — the server prices from the DB.
+// prices/tier names (and length_in) are silently dropped — the server prices from the DB.
 function validateQuoteInput(raw: unknown): QuoteInput {
   const r = (raw ?? {}) as Record<string, unknown>;
   const mode = r.mode === "wholesaler" ? "wholesaler" : "diy";
@@ -88,7 +89,7 @@ function validateQuoteInput(raw: unknown): QuoteInput {
     design_w: numOrUndef(r.design_w),
     design_h: numOrUndef(r.design_h),
     qty: numOrUndef(r.qty),
-    length_in: numOrUndef(r.length_in),
+    upload_id: typeof r.upload_id === "string" ? r.upload_id : undefined,
   };
 }
 
@@ -110,8 +111,10 @@ export const getQuote = createServerFn({ method: "POST" })
     }));
 
     if (data.mode === "wholesaler") {
-      const length_in = data.length_in ?? 0;
-      const comp = computeWholesalerSheet({ length_in });
+      if (!data.upload_id) throw new Error(UNREADABLE_SIZE_MSG);
+      const comp = computeWholesalerSheet({
+        length_in: await resolveSheetLengthIn(data.upload_id),
+      });
       // Wholesaler qty is the sheet count (1) for per-piece purposes; treat as 1.
       return buildQuote(comp, pricing, 1);
     }

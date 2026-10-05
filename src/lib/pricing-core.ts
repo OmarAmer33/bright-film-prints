@@ -6,6 +6,30 @@ export const USABLE_WIDTH = 21.875; // 22" film minus margin
 export const TIERS_IN = [36, 60, 84, 120, 180, 240, 360] as const; // 3,5,7,10,15,20,30 ft
 export const MIN_TIER_IN = 36;
 export const MAX_TIER_IN = 360;
+export const SHEET_WIDTH_IN = 22; // film width — every gang sheet is 22" wide
+
+// Single source of truth for a gang sheet's length, derived from the uploaded
+// file. PDFs carry true physical inches; rasters use the pixel aspect ratio with
+// the short edge = 22". Lower bound 36" (3 ft minimum). NO upper bound — lengths
+// over MAX_TIER_IN are split into multiple sheets by breakdownForLength.
+export function deriveSheetLengthIn(dims: {
+  width_px?: number | null;
+  height_px?: number | null;
+  width_in?: number | null;
+  height_in?: number | null;
+}): number | null {
+  const { width_px, height_px, width_in, height_in } = dims;
+  let raw: number | null = null;
+  if (width_in && height_in && width_in > 0 && height_in > 0) {
+    raw = Math.round(Math.max(width_in, height_in));
+  } else if (width_px && height_px && width_px > 0 && height_px > 0) {
+    const short = Math.min(width_px, height_px);
+    const long = Math.max(width_px, height_px);
+    raw = Math.round((long * SHEET_WIDTH_IN) / short);
+  }
+  if (raw === null || !Number.isFinite(raw)) return null;
+  return Math.max(MIN_TIER_IN, raw);
+}
 
 export type SheetBreakdownLine = { size_ft: number; count: number };
 

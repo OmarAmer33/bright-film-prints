@@ -12,6 +12,7 @@ import {
   type PricingRow,
   type SheetBreakdownLine,
 } from "./pricing-core";
+import { resolveSheetLengthIn } from "./sheet-length.server";
 
 // ---------------- Input validation ----------------
 // One item = one print job. Server reprices each job ONCE from its dimensions.
@@ -22,7 +23,6 @@ export type CheckoutLineInput = {
   design_w?: number;
   design_h?: number;
   job_qty?: number;
-  length_in?: number;
   upload_id?: string;
   claimed_breakdown?: SheetBreakdownLine[];
 };
@@ -65,7 +65,6 @@ function validateCheckoutInput(raw: unknown): CheckoutInput {
       design_w: numOrUndef(o.design_w),
       design_h: numOrUndef(o.design_h),
       job_qty: numOrUndef(o.job_qty),
-      length_in: numOrUndef(o.length_in),
       upload_id: typeof o.upload_id === "string" ? o.upload_id : undefined,
       claimed_breakdown: validateClaimedBreakdown(o.claimed_breakdown),
     };
@@ -178,10 +177,12 @@ export const createCheckout = createServerFn({ method: "POST" })
       let comp;
       let jobQty = 1;
       const isWholesaler =
-        item.length_in && item.length_in > 0 && !item.design_w && !item.design_h;
+        item.upload_id && !item.design_w && !item.design_h;
 
       if (isWholesaler) {
-        comp = computeWholesalerSheet({ length_in: item.length_in! });
+        comp = computeWholesalerSheet({
+          length_in: await resolveSheetLengthIn(item.upload_id!),
+        });
       } else {
         jobQty = Math.max(1, Math.floor(item.job_qty ?? 0));
         comp = computeSheet({
