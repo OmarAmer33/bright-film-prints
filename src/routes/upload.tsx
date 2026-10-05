@@ -9,6 +9,10 @@ import { PRESETS, PresetPicker } from "@/components/upload/PresetPicker";
 import {
   computeSheet,
   computeWholesalerSheet,
+  deriveSheetLengthIn,
+  MAX_TIER_IN,
+  MIN_TIER_IN,
+  SHEET_WIDTH_IN,
   priceBreakdown,
   USABLE_WIDTH,
   type SheetComputation,
@@ -322,6 +326,160 @@ function WholesalerFlow({
 }) {
   const quoteFn = useServerFn(getQuote);
   const addItem = useCart((s) => s.addItem);
+  const [submitting, setSubmitting] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  // Length is read from the file (same function the server uses). Never typed.
+  const lengthIn = useMemo(() => (upload ? deriveSheetLengthIn(upload) : null), [upload?.id]);
+  const comp = useMemo(
+    () => computeWholesalerSheet({ length_in: lengthIn ?? 0 }),
+    [lengthIn],
+  );
+  const livePricing = pricing?.tiers ?? [];
+  const { lines, subtotal } = useMemo(
+    () => priceBreakdown(comp.breakdown, livePricing),
+    [comp.breakdown, livePricing],
+  );
+
+  // Display-only facts about the file: true PDF size, or raster DPI.
+  const detected = useMemo(() => {
+    if (lengthIn === null) return null;
+    const inW = upload?.width_in;
+    const inH = upload?.height_in;
+    if (inW && inH && inW > 0 && inH > 0) {
+      const rawIn = Math.round(Math.max(inW, inH));
+      const shortIn = Number(Math.min(inW, inH).toFixed(1));
+      return { rawIn, shortIn, source: "file" as const };
+    }
+    const w = upload?.width_px ?? 0;
+    const h = upload?.height_px ?? 0;
+    const shortPx = Math.min(w, h);
+    const rawIn = Math.round((Math.max(w, h) * SHEET_WIDTH_IN) / shortPx);
+    const dpi = Math.round(shortPx / SHEET_WIDTH_IN);
+    return { rawIn, dpi, source: "pixels" as const };
+  }, [upload?.id, lengthIn]);
+  const sheetCount = comp.breakdown.reduce((n, b) => n + b.count, 0);
+
+  async function addToCart() {
+    if (!upload) return;
+    setSubmitting(true);
+    setAddedMsg(null);
+    try {
+      const quote = await quoteFn({
+        data: { mode: "diy", design_w: widthIn, design_h: heightIn, qty },
+      });
+      if (quote.over_width || quote.lines.length === 0) {
+        setAddedMsg("Couldn't price this — check your dimensions.");
+        return;
+      }
+      addItem({
+        source: "upload",
+        kind: "diy",
+        design_w: widthIn,
+        design_h: heightIn,
+        job_qty: qty,
+        per_piece: quote.per_piece,
+        upload_id: upload.id,
+        preview_url: upload.signed_url ?? undefined,
+        label: `${qty} × ${widthIn}″×${heightIn}″ prints`,
+        breakdown: quote.lines.map((l) => ({
+          size_ft: l.size_ft,
+          count: l.count,
+          unit_price: l.unit_price,
+          line_total: l.line_total,
+        })),
+        line_total: quote.subtotal,
+      });
+      setAddedMsg("Added to cart.");
+      router.invalidate();
+    } catch (e) {
+      console.error(e);
+      setAddedMsg("Couldn't add to cart. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="mt-8 space-y-8">
+      <section>
+        <SectionHead title="Print size" hint="Placeholder widths — confirm with Chai" />
+        <div className="mt-3">
+          <PresetPicker selected={presetId} onSelect={pickPreset} />
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:max-w-md">
+          <NumField
+            label="Width (in)"
+            value={widthIn}
+            onChange={(v) => {
+              setPresetId("custom");
+              applyWidth(v);
+            }}
+          />
+          <NumField
+            label="Height (in)"
+            value={heightIn}
+            onChange={(v) => {
+              setPresetId("custom");
+              setHeightIn(v);
+              if (ratioLocked) setRatioLocked(false);
+            }}
+          />
+        </div>
+        {ratio && (
+          <label className="mt-2 inline-flex items-center gap-2 text-xs text-stone">
+            <input
+              type="checkbox"
+              checked={ratioLocked}
+              onChange={(e) => setRatioLocked(e.target.checked)}
+            />
+            Lock height to art aspect ratio
+          </label>
+        )}
+      </section>
+
+      <section>
+        <SectionHead title="Quantity" />
+        <div className="mt-3 max-w-[180px]">
+          <NumField label="Pieces" value={qty} onChange={(v) => setQty(Math.max(1, Math.floor(v)))} />
+        </div>
+      </section>
+
+      <QuotePanel
+        comp={comp}
+        lines={liveLines}
+        subtotal={subtotal}
+        perPiece={perPiece}
+        qty={qty}
+        effectiveDpi={effectiveDpi}
+        onRotate={rotate}
+        hasUpload={!!upload}
+        onAddToCart={addToCart}
+        submitting={submitting}
+        addedMsg={addedMsg}
+      />
+    </div>
+  );
+}
+
+// Widened locally: the uploads API returns width_in/height_in for PDFs, and
+// DropZone passes the response object straight through to onUploaded, so the
+// fields arrive at runtime even though UploadResult (owned by DropZone.tsx)
+// doesn't declare them.
+type UploadWithInches = UploadResult & {
+  width_in?: number | null;
+  height_in?: number | null;
+};
+
+function WholesalerFlow({
+  upload,
+  pricing,
+}: {
+  upload: UploadWithInches | null;
+  pricing: PricingPayload | null;
+}) {
+  const quoteFn = useServerFn(getQuote);
+  const addItem = useCart((s) => s.addItem);
   const [lengthIn, setLengthIn] = useState(60);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -371,14 +529,14 @@ function WholesalerFlow({
     setSubmitting(true);
     setMsg(null);
     try {
-      const q = await quoteFn({ data: { mode: "wholesaler", length_in: lengthIn } });
+      const q = await quoteFn({ data: { mode: "wholesaler", upload_id: upload.id } });
       addItem({
         source: "upload",
         kind: "wholesaler",
-        length_in: lengthIn,
+        length_in: q.length_in,
         upload_id: upload.id,
         preview_url: upload.signed_url ?? undefined,
-        label: `Gang sheet · ${lengthIn}″`,
+        label: `Gang sheet · ${q.length_in}″`,
         breakdown: q.lines.map((l) => ({
           size_ft: l.size_ft,
           count: l.count,
@@ -390,7 +548,11 @@ function WholesalerFlow({
       setMsg("Added to cart.");
     } catch (e) {
       console.error(e);
-      setMsg("Couldn't add to cart.");
+      setMsg(
+        e instanceof Error && e.message.startsWith("We couldn't read")
+          ? e.message
+          : "Couldn't add to cart.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -401,37 +563,31 @@ function WholesalerFlow({
       <section>
         <SectionHead
           title="Sheet length"
-          hint="Confirm the printed length of your 22″-wide sheet"
+          hint="Read from your file — every sheet is 22″ wide"
         />
-        <div className="mt-3 max-w-[220px]">
-          <NumField
-            label="Length (in)"
-            value={lengthIn}
-            onChange={(v) => setLengthIn(Math.max(1, v))}
-          />
-        </div>
-        {detected ? (
-          <p className="mt-2 text-xs text-stone">
-            {detected.source === "file" ? (
-              <>
-                Detected from your PDF: {detected.shortIn}″ × {detected.clampedIn}″.
-              </>
-            ) : (
-              <>
-                Detected: 22″ × {detected.clampedIn}″ · ~{detected.dpi} DPI.
-                {detected.dpi < 150 &&
-                  " Low resolution for print — consider re-exporting at a higher DPI."}
-              </>
-            )}
-            {detected.clampedIn > detected.suggestedIn &&
-              " 3 ft minimum sheet applies."}
-            {detected.clampedIn < detected.suggestedIn &&
-              " 30 ft is the maximum single sheet — split longer runs into multiple sheets."}{" "}
-            Adjust if needed.
-          </p>
+        {detected && lengthIn !== null ? (
+          <div className="mt-3 text-sm">
+            <p className="font-bold text-ink">
+              Your sheet: {SHEET_WIDTH_IN}″ × {lengthIn}″
+            </p>
+            <p className="mt-1 text-xs text-stone">
+              {detected.source === "file" ? (
+                <>Detected from your PDF: {detected.shortIn}″ × {detected.rawIn}″.</>
+              ) : (
+                <>
+                  ~{detected.dpi} DPI.
+                  {detected.dpi < 150 &&
+                    " Low resolution for print — consider re-exporting at a higher DPI."}
+                </>
+              )}
+              {detected.rawIn < MIN_TIER_IN && " 3 ft minimum sheet applies."}
+              {lengthIn > MAX_TIER_IN &&
+                ` Longer than 30 ft — prints as ${sheetCount} sheets (see quote).`}
+            </p>
+          </div>
         ) : upload ? (
           <p className="mt-2 text-xs text-stone">
-            Length could not be detected from this file — enter it manually.
+            We couldn't read the size of that file. Please re-upload it.
           </p>
         ) : null}
       </section>
@@ -459,7 +615,7 @@ function WholesalerFlow({
         <div className="mt-5">
           <GradientButton
             onClick={addToCart}
-            disabled={submitting || !upload}
+            disabled={submitting || !upload || lengthIn === null}
           >
             {submitting ? "Adding…" : upload ? "Add to cart" : "Upload to add"}
           </GradientButton>
