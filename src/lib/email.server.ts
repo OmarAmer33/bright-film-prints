@@ -20,6 +20,13 @@ function fromAddress(): string {
   return process.env.EMAIL_FROM ?? "Bright Transfers <onboarding@resend.dev>";
 }
 
+function replyToAddress(): string | null {
+  // Customers replying to order emails need a working mailbox; the sending
+  // domain (send.brighttransfers.com) has no MX record. Set EMAIL_REPLY_TO,
+  // e.g. "Bright Transfers <support@brighttransfers.com>", to route replies.
+  return process.env.EMAIL_REPLY_TO ?? null;
+}
+
 function siteOrigin(): string {
   return (process.env.PUBLIC_SITE_URL as string | undefined) ?? "https://bright-film-prints.lovable.app";
 }
