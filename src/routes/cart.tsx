@@ -74,7 +74,6 @@ function CartPage() {
           design_w: i.design_w,
           design_h: i.design_h,
           job_qty: i.job_qty,
-          length_in: i.length_in,
           upload_id: i.upload_id,
           claimed_breakdown: i.breakdown.map((b) => ({
             size_ft: b.size_ft,

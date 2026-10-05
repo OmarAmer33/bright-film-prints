@@ -22,6 +22,7 @@ export type CartItem = {
   design_h?: number;
   job_qty?: number;
   // Wholesaler context
+  // Display-only (label). Checkout ignores it and derives length server-side from upload_id.
   length_in?: number;
   // Display + materialization
   upload_id?: string;
