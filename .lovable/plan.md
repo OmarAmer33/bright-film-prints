@@ -27,11 +27,15 @@ No pricing changes. No changes to package.json or bun.lock: the icon images are 
 
 ## 5. Favicon
 New files in a new `public/` folder:
-- `public/favicon.svg`: the logo SVG with its viewBox padded to a square (`92 44 859 859`, centred). No drawing changes.
+- `public/favicon.svg`: the logo SVG with only the root `viewBox` changed, to exactly `viewBox="61 3 940 940"`. The root `width`/`height` attributes are removed so the icon scales as a square. Path data, fills and fill-rule are not changed.
 - `public/favicon-32.png`: 32×32, transparent.
-- `public/apple-touch-icon.png`: 180×180 on the paper colour `#FFF7EC` with a small margin. iOS turns transparent areas black, so it needs a solid background.
+- `public/apple-touch-icon.png`: 180×180 on the paper colour `#FFF7EC` with a small inner margin. iOS turns transparent areas black, so it needs a solid background.
 
-The PNGs are rendered once from that SVG with `rsvg-convert` / `magick`, which are already installed in the sandbox. They are committed as files, and no package is added.
+Both PNGs are rendered from the corrected `public/favicon.svg`, not from the original, so all three icons are framed identically. They are rendered once with `rsvg-convert` / `magick`, which are already installed in the sandbox, and committed as files. No package is added.
+
+After generating, I will confirm the final viewBox string and diff the path elements against the original to show they are unchanged.
+
+Your source numbers don't match the file the header uses: that file declares `viewBox="112 44 839 859"`, and its path coordinates (control points included) span roughly x 118→946 and y 52→898. `61 3 940 940` contains both your frame (x 95→967, y 27→919) and this one, so it is safe either way. I'm using it exactly as you gave it.
 
 `src/routes/__root.tsx`: append to the end of `head().links` only, leaving everything existing in place:
 ```ts
