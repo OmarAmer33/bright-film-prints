@@ -7,6 +7,7 @@ export const TIERS_IN = [36, 60, 84, 120, 180, 240, 360] as const; // 3,5,7,10,1
 export const MIN_TIER_IN = 36;
 export const MAX_TIER_IN = 360;
 export const SHEET_WIDTH_IN = 22; // film width — every gang sheet is 22" wide
+export const UNREADABLE_SIZE_MSG = "We couldn't read the size of that file. Please re-upload it.";
 
 // Single source of truth for a gang sheet's length, derived from the uploaded
 // file. PDFs carry true physical inches; rasters use the pixel aspect ratio with

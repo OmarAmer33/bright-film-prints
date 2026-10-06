@@ -1,6 +1,6 @@
-import { deriveSheetLengthIn } from "./pricing-core";
+import { deriveSheetLengthIn, UNREADABLE_SIZE_MSG } from "./pricing-core";
 
-export const UNREADABLE_SIZE_MSG = "We couldn't read the size of that file. Please re-upload it.";
+export { UNREADABLE_SIZE_MSG };
 
 // Server-authoritative gang-sheet length. Reads the uploads row and derives the
 // length; fails closed — never falls back to a client-supplied number.

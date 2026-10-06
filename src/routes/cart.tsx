@@ -24,7 +24,6 @@ function CartPage() {
   const subtotal = useCart((s) => s.subtotal());
   const checkoutFn = useServerFn(createCheckout);
 
-  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signedIn, setSignedIn] = useState(false);
@@ -68,7 +67,6 @@ function CartPage() {
       // ONE payload entry per job. Server reprices each job exactly once from
       // its dimensions and compares against claimed_breakdown for tamper checks.
       const payload: CheckoutInput = {
-        email: email.trim() || undefined,
         items: items.map((i) => ({
           source: i.source,
           design_w: i.design_w,
@@ -149,18 +147,6 @@ function CartPage() {
             </p>
 
             <div className="mt-6 flex flex-col items-stretch gap-3 sm:items-end">
-              <div className="w-full sm:max-w-sm">
-                <label className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone">
-                  Email for receipt (optional)
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="mt-1 w-full rounded-pill border border-line bg-paper px-4 py-2 text-sm text-ink placeholder:text-stone/60 focus:border-ember focus:outline-none"
-                />
-              </div>
               {signedIn && balance > 0 && (
                 <div className="w-full rounded-card border border-line bg-paper p-3 sm:max-w-sm">
                   <label className="flex items-center gap-2 text-sm text-ink">

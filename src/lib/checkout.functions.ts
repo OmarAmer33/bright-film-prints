@@ -340,10 +340,14 @@ export const createCheckout = createServerFn({ method: "POST" })
       sessionMetadata.rewards_redeemed = String(redeemAmount);
     }
 
+    // Prefill Stripe with an address we already hold; never send the placeholder.
+    const stripePrefillEmail =
+      [data.email, customerEmail].find((e) => e && e !== GUEST_EMAIL_PLACEHOLDER) ?? undefined;
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
-      customer_email: data.email,
+      customer_email: stripePrefillEmail,
       // Single combined line item to avoid per-line tax rounding mismatch
       line_items: [
         {

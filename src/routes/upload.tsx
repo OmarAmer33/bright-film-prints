@@ -13,6 +13,7 @@ import {
   MAX_TIER_IN,
   MIN_TIER_IN,
   SHEET_WIDTH_IN,
+  UNREADABLE_SIZE_MSG,
   priceBreakdown,
   USABLE_WIDTH,
   type SheetComputation,
@@ -385,7 +386,7 @@ function WholesalerFlow({
     } catch (e) {
       console.error(e);
       setMsg(
-        e instanceof Error && e.message.startsWith("We couldn't read")
+        e instanceof Error && e.message === UNREADABLE_SIZE_MSG
           ? e.message
           : "Couldn't add to cart.",
       );
@@ -423,7 +424,7 @@ function WholesalerFlow({
           </div>
         ) : upload ? (
           <p className="mt-2 text-xs text-stone">
-            We couldn't read the size of that file. Please re-upload it.
+            {UNREADABLE_SIZE_MSG}
           </p>
         ) : null}
       </section>
