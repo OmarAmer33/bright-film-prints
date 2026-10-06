@@ -80,6 +80,11 @@ async function loadOrderForEmail(orderId: string) {
     if (cust?.email) toEmail = cust.email;
     if (cust?.name) name = cust.name;
   }
+  if (!name) {
+    // Guests: fall back to the name Stripe collected (stored by the webhook).
+    const shipName = (order.shipping_address as { name?: unknown } | null)?.name;
+    if (typeof shipName === "string" && shipName.trim()) name = shipName.trim();
+  }
   if (toEmail === GUEST_EMAIL_PLACEHOLDER) {
     console.error(`[email] order ${orderId} has no deliverable address; not sending`);
     return null;
