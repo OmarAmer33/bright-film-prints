@@ -16,6 +16,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import type Stripe from "stripe";
+import { GUEST_EMAIL_PLACEHOLDER } from "@/lib/order-constants";
 
 export const Route = createFileRoute("/api/public/stripe/webhook")({
   server: {
@@ -69,7 +70,7 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
 
           const { data: order, error: loadErr } = await supabaseAdmin
             .from("orders")
-            .select("id, total, status, notes")
+            .select("id, total, status, notes, email")
             .eq("id", orderId)
             .maybeSingle();
           if (loadErr || !order) {
@@ -113,6 +114,12 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
             ? { name: shipDetails.name ?? null, address: shipDetails.address ?? null }
             : null;
 
+          // Backfill the real address from Stripe ONLY over the guest placeholder —
+          // never overwrite an address the customer typed.
+          const stripeEmail = session.customer_details?.email?.trim();
+          const backfillEmail =
+            stripeEmail && order.email === GUEST_EMAIL_PLACEHOLDER ? stripeEmail : null;
+
           const { data: updated, error: updateErr } = await supabaseAdmin
             .from("orders")
             .update({
@@ -121,6 +128,7 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
               total: stripeTotalCents / 100,
               stripe_payment_intent_id: paymentIntentId ?? null,
               shipping_address: shippingAddress,
+              ...(backfillEmail ? { email: backfillEmail } : {}),
             })
             .eq("id", order.id)
             .eq("status", "new") // idempotency layer 2

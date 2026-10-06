@@ -13,6 +13,7 @@ import {
   type SheetBreakdownLine,
 } from "./pricing-core";
 import { resolveSheetLengthIn } from "./sheet-length.server";
+import { GUEST_EMAIL_PLACEHOLDER } from "./order-constants";
 
 // ---------------- Input validation ----------------
 // One item = one print job. Server reprices each job ONCE from its dimensions.
@@ -247,10 +248,20 @@ export const createCheckout = createServerFn({ method: "POST" })
 
     const resolvedCustomerId = await resolveCustomerIdFromAuth();
 
+    let customerEmail: string | null = null;
+    if (!data.email && resolvedCustomerId) {
+      const { data: custRow } = await supabaseAdmin
+        .from("customers")
+        .select("email")
+        .eq("id", resolvedCustomerId)
+        .maybeSingle();
+      customerEmail = custRow?.email ?? null;
+    }
+
     const { data: orderRow, error: orderErr } = await supabaseAdmin
       .from("orders")
       .insert({
-        email: data.email ?? "guest@brighttransfers.local",
+        email: data.email ?? customerEmail ?? GUEST_EMAIL_PLACEHOLDER,
         status: "new",
         subtotal,
         shipping_fee,
