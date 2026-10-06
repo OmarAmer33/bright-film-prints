@@ -4,6 +4,8 @@
 // Both send helpers SELF-CATCH: they never throw. Email is a side effect and must
 // never fail the webhook (Stripe would retry) or an admin save.
 
+import { GUEST_EMAIL_PLACEHOLDER } from "./order-constants";
+
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 function getResendKey(): string {
@@ -78,6 +80,10 @@ async function loadOrderForEmail(orderId: string) {
     if (cust?.email) toEmail = cust.email;
     if (cust?.name) name = cust.name;
   }
+  if (toEmail === GUEST_EMAIL_PLACEHOLDER) {
+    console.error(`[email] order ${orderId} has no deliverable address; not sending`);
+    return null;
+  }
   const { data: items } = await supabaseAdmin
     .from("order_items").select("size_ft, quantity, line_total")
     .eq("order_id", orderId).order("size_ft", { ascending: false });
@@ -129,7 +135,7 @@ function ctaButton(href: string, label: string): string {
 export async function sendOrderConfirmationEmail(orderId: string): Promise<boolean> {
   try {
     const loaded = await loadOrderForEmail(orderId);
-    if (!loaded) { console.error(`[email] confirmation: order ${orderId} not found`); return false; }
+    if (!loaded) { console.error(`[email] confirmation: order ${orderId} not found or undeliverable`); return false; }
     const { order, toEmail, name, items } = loaded;
     const link = `${siteOrigin()}/orders/${order.view_token}`;
     const greeting = name ? `Hi ${name},` : "Hi,";
@@ -160,7 +166,7 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
 export async function sendShippingNotificationEmail(orderId: string): Promise<boolean> {
   try {
     const loaded = await loadOrderForEmail(orderId);
-    if (!loaded) { console.error(`[email] shipping: order ${orderId} not found`); return false; }
+    if (!loaded) { console.error(`[email] shipping: order ${orderId} not found or undeliverable`); return false; }
     const { order, toEmail, name } = loaded;
     const link = `${siteOrigin()}/orders/${order.view_token}`;
     const greeting = name ? `Hi ${name},` : "Hi,";
